@@ -1,0 +1,19 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: sahayak-postgres
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: sahayak_DB
+      POSTGRES_USER: sahayak_user
+      POSTGRES_PASSWORD: sahayak_password
+
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
