@@ -4,10 +4,7 @@ import {
   createProvider,
   getProviderProfile,
   getProviderDashboard,
-  getProviders,
-  getPendingProviders,
-  approveProvider,
-  rejectProvider
+  getProviders
 } from "../controllers/provider.controller.js";
 
 import authMiddleware from "../middleware/auth.middleware.js";
@@ -15,25 +12,11 @@ import roleMiddleware from "../middleware/role.middleware.js";
 
 const router = express.Router();
 
-
 /*
 |--------------------------------------------------------------------------
-| Provider Profile
+| Public Providers
 |--------------------------------------------------------------------------
 */
-
-router.post(
-  "/profile",
-  authMiddleware,
-  createProvider
-);
-
-router.post("/", authMiddleware, createProvider);
-router.get(
-  "/profile",
-  authMiddleware,
-  getProviderProfile
-);
 
 router.get(
   "/",
@@ -42,30 +25,36 @@ router.get(
 
 /*
 |--------------------------------------------------------------------------
-| Admin Provider Verification
+| Provider Profile
 |--------------------------------------------------------------------------
 */
 
+router.post(
+  "/",
+  authMiddleware,
+  roleMiddleware("PROVIDER"),
+  createProvider
+);
+
+router.post(
+  "/profile",
+  authMiddleware,
+  roleMiddleware("PROVIDER"),
+  createProvider
+);
+
 router.get(
-  "/admin/pending",
+  "/profile",
   authMiddleware,
-  roleMiddleware("ADMIN"),
-  getPendingProviders
+  roleMiddleware("PROVIDER"),
+  getProviderProfile
 );
 
-router.patch(
-  "/admin/:id/approve",
-  authMiddleware,
-  roleMiddleware("ADMIN"),
-  approveProvider
-);
-
-router.patch(
-  "/admin/:id/reject",
-  authMiddleware,
-  roleMiddleware("ADMIN"),
-  rejectProvider
-);
+/*
+|--------------------------------------------------------------------------
+| Provider Dashboard
+|--------------------------------------------------------------------------
+*/
 
 router.get(
   "/dashboard",
@@ -73,4 +62,5 @@ router.get(
   roleMiddleware("PROVIDER"),
   getProviderDashboard
 );
+
 export default router;

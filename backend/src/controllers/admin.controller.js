@@ -1,4 +1,4 @@
-import {prisma} from "../config/prisma.js";
+import { prisma } from "../config/prisma.js";
 
 export const getPendingProviders = async (req, res) => {
   try {
@@ -46,12 +46,11 @@ export const getPendingProviders = async (req, res) => {
   }
 };
 
-
 export const getProviderById = async (req, res) => {
   try {
     const providerId = Number(req.params.id);
 
-    if (Number.isNaN(providerId)) {
+    if (!Number.isInteger(providerId) || providerId <= 0) {
       return res.status(400).json({
         success: false,
         message: "Invalid provider ID"
@@ -98,12 +97,11 @@ export const getProviderById = async (req, res) => {
   }
 };
 
-
 export const approveProvider = async (req, res) => {
   try {
     const providerId = Number(req.params.id);
 
-    if (Number.isNaN(providerId)) {
+    if (!Number.isInteger(providerId) || providerId <= 0) {
       return res.status(400).json({
         success: false,
         message: "Invalid provider ID"
@@ -164,12 +162,11 @@ export const approveProvider = async (req, res) => {
   }
 };
 
-
 export const rejectProvider = async (req, res) => {
   try {
     const providerId = Number(req.params.id);
 
-    if (Number.isNaN(providerId)) {
+    if (!Number.isInteger(providerId) || providerId <= 0) {
       return res.status(400).json({
         success: false,
         message: "Invalid provider ID"
@@ -197,7 +194,7 @@ export const rejectProvider = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "Provider rejected successfully"
+      message: "Provider application rejected"
     });
   } catch (error) {
     console.error("Reject provider error:", error);

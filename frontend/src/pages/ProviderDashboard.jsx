@@ -1,18 +1,80 @@
 import { useEffect, useState } from "react";
+import { useAuth } from "../context/AuthContext";
 import api from "../services/api";
 import Loading from "../components/Loading";
 
+const resourceOptions = {
+    BLOOD: [
+        "A+ Blood",
+        "A- Blood",
+        "B+ Blood",
+        "B- Blood",
+        "AB+ Blood",
+        "AB- Blood",
+        "O+ Blood",
+        "O- Blood"
+    ],
+
+    HOSPITAL_BED: [
+        "General Bed",
+        "ICU Bed",
+        "Emergency Bed",
+        "Pediatric Bed",
+        "Isolation Bed",
+        "Ventilator Bed"
+    ],
+
+    MEDICINE: [
+        "Paracetamol",
+        "Antibiotics",
+        "ORS",
+        "Insulin",
+        "Pain Relief Medicine",
+        "Emergency Medicine Kit"
+    ],
+
+    AMBULANCE: [
+        "Basic Ambulance",
+        "Advanced Life Support Ambulance",
+        "Patient Transport Ambulance",
+        "Neonatal Ambulance"
+    ],
+
+    SHELTER: [
+        "Emergency Shelter",
+        "Temporary Shelter",
+        "Family Shelter",
+        "Women and Children Shelter"
+    ],
+
+    FOOD: [
+        "Ready-to-Eat Meals",
+        "Food Packets",
+        "Dry Ration Kit",
+        "Emergency Meal Kit"
+    ],
+
+    WATER: [
+        "Drinking Water Bottles",
+        "Water Can",
+        "Emergency Water Kit",
+        "Water Tanker"
+    ]
+};
+
 const categories = [
-    "BLOOD",
-    "HOSPITAL_BED",
-    "MEDICINE",
-    "AMBULANCE",
-    "SHELTER",
-    "FOOD",
-    "WATER"
+    ["BLOOD", "Blood"],
+    ["HOSPITAL_BED", "Hospital Beds"],
+    ["MEDICINE", "Medicine"],
+    ["AMBULANCE", "Ambulance"],
+    ["SHELTER", "Shelter"],
+    ["FOOD", "Food"],
+    ["WATER", "Water"]
 ];
 
 const ProviderDashboard = () => {
+    const { user } = useAuth();
+
     const [provider, setProvider] = useState(null);
     const [resources, setResources] = useState([]);
     const [requests, setRequests] = useState([]);
@@ -26,8 +88,8 @@ const ProviderDashboard = () => {
     });
 
     const [resourceForm, setResourceForm] = useState({
-        name: "",
         category: "BLOOD",
+        name: resourceOptions.BLOOD[0],
         quantity: 0,
         available: true,
         city: "",
@@ -35,34 +97,63 @@ const ProviderDashboard = () => {
         description: ""
     });
 
+    const [quantityDrafts, setQuantityDrafts] = useState({});
+
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
+    const [updatingResourceId, setUpdatingResourceId] =
+        useState(null);
+
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
 
     const loadDashboard = async () => {
         try {
-            const [providerResponse, requestResponse] =
-                await Promise.all([
-                    api.getProviders(),
-                    api.getProviderRequests()
-                ]);
+            setError("");
 
-            const providers = providerResponse.data?.providers ?? [];
+            const providerResponse =
+                await api.getProviderDashboard();
 
-            const currentProvider = providers.find(
-                (item) => Number(item.userId) === Number(user.id)
-            );
+            const currentProvider =
+                providerResponse.data?.provider || null;
 
-            setProvider(currentProvider || null);
+            setProvider(currentProvider);
 
             if (currentProvider) {
-                setResources(
-                    currentProvider.resources || []
+                const currentResources =
+                    currentProvider.resources || [];
+
+                setResources(currentResources);
+
+                setQuantityDrafts(
+                    Object.fromEntries(
+                        currentResources.map((resource) => [
+                            resource.id,
+                            resource.quantity
+                        ])
+                    )
                 );
+
+                if (!resourceForm.city) {
+                    setResourceForm((current) => ({
+                        ...current,
+                        city: currentProvider.city || ""
+                    }));
+                }
+            } else {
+                setResources([]);
             }
 
-            setRequests(requestResponse.data);
+            try {
+                const requestResponse =
+                    await api.getProviderRequests();
+
+                setRequests(
+                    requestResponse.data || []
+                );
+            } catch {
+                setRequests([]);
+            }
         } catch (error) {
             setError(error.message);
         } finally {
@@ -71,27 +162,43 @@ const ProviderDashboard = () => {
     };
 
     useEffect(() => {
-        loadDashboard();
-    }, []);
+        if (user) {
+            loadDashboard();
+        }
+    }, [user]);
 
     const handleProviderChange = (event) => {
-        setProviderForm({
-            ...providerForm,
+        setProviderForm((current) => ({
+            ...current,
             [event.target.name]: event.target.value
-        });
+        }));
     };
 
     const handleResourceChange = (event) => {
-        const { name, value, type, checked } =
-            event.target;
+        const {
+            name,
+            value,
+            type,
+            checked
+        } = event.target;
 
-        setResourceForm({
-            ...resourceForm,
+        setResourceForm((current) => ({
+            ...current,
             [name]:
                 type === "checkbox"
                     ? checked
                     : value
-        });
+        }));
+    };
+
+    const handleCategoryChange = (event) => {
+        const category = event.target.value;
+
+        setResourceForm((current) => ({
+            ...current,
+            category,
+            name: resourceOptions[category][0]
+        }));
     };
 
     const createProvider = async (event) => {
@@ -105,7 +212,7 @@ const ProviderDashboard = () => {
             await api.createProvider(providerForm);
 
             setSuccess(
-                "Provider profile created. It requires verification before resources can be published."
+                "Provider profile created. Waiting for administrator verification."
             );
 
             await loadDashboard();
@@ -124,17 +231,28 @@ const ProviderDashboard = () => {
         setSuccess("");
 
         try {
+            const quantity =
+                Number(resourceForm.quantity);
+
             await api.createResource({
                 ...resourceForm,
-                quantity: Number(resourceForm.quantity)
+                quantity,
+                available:
+                    quantity > 0 &&
+                    resourceForm.available
             });
 
-            setSuccess("Resource added successfully.");
+            setSuccess(
+                "Resource added successfully."
+            );
 
             setResourceForm({
-                ...resourceForm,
-                name: "",
+                category: "BLOOD",
+                name: resourceOptions.BLOOD[0],
                 quantity: 0,
+                available: true,
+                city: provider?.city || "",
+                address: "",
                 description: ""
             });
 
@@ -146,18 +264,89 @@ const ProviderDashboard = () => {
         }
     };
 
-    const updateAvailability = async (
-        resource
+    const handleQuantityChange = (
+        resourceId,
+        value
     ) => {
+        setQuantityDrafts((current) => ({
+            ...current,
+            [resourceId]: value
+        }));
+    };
+
+    const updateQuantity = async (resource) => {
+        const quantity = Number(
+            quantityDrafts[resource.id]
+        );
+
+        if (
+            !Number.isInteger(quantity) ||
+            quantity < 0
+        ) {
+            setError(
+                "Quantity must be a non-negative integer."
+            );
+            return;
+        }
+
+        setUpdatingResourceId(resource.id);
+        setError("");
+        setSuccess("");
+
         try {
-            await api.updateResource(resource.id, {
-                quantity: resource.quantity,
-                available: !resource.available
-            });
+            await api.updateResource(
+                resource.id,
+                {
+                    quantity
+                }
+            );
+
+            setSuccess(
+                `${resource.name} quantity updated to ${quantity}.`
+            );
 
             await loadDashboard();
         } catch (error) {
             setError(error.message);
+        } finally {
+            setUpdatingResourceId(null);
+        }
+    };
+
+    const updateAvailability = async (
+        resource
+    ) => {
+        if (Number(resource.quantity) === 0) {
+            setError(
+                "A resource with quantity 0 cannot be marked available."
+            );
+            return;
+        }
+
+        setUpdatingResourceId(resource.id);
+        setError("");
+        setSuccess("");
+
+        try {
+            await api.updateResource(
+                resource.id,
+                {
+                    available:
+                        !resource.available
+                }
+            );
+
+            setSuccess(
+                resource.available
+                    ? `${resource.name} marked unavailable.`
+                    : `${resource.name} marked available.`
+            );
+
+            await loadDashboard();
+        } catch (error) {
+            setError(error.message);
+        } finally {
+            setUpdatingResourceId(null);
         }
     };
 
@@ -165,10 +354,17 @@ const ProviderDashboard = () => {
         requestId,
         status
     ) => {
+        setError("");
+        setSuccess("");
+
         try {
             await api.updateRequestStatus(
                 requestId,
                 status
+            );
+
+            setSuccess(
+                `Request ${status.toLowerCase()} successfully.`
             );
 
             await loadDashboard();
@@ -216,7 +412,9 @@ const ProviderDashboard = () => {
                 <section className="dashboard-section">
                     <div className="section-heading">
                         <span>STEP 1</span>
-                        <h2>Create provider profile</h2>
+                        <h2>
+                            Create provider profile
+                        </h2>
                     </div>
 
                     <form
@@ -240,7 +438,9 @@ const ProviderDashboard = () => {
                             Provider Type
                             <input
                                 name="type"
-                                value={providerForm.type}
+                                value={
+                                    providerForm.type
+                                }
                                 onChange={handleProviderChange}
                                 required
                                 placeholder="Hospital / NGO / Blood Bank"
@@ -251,7 +451,9 @@ const ProviderDashboard = () => {
                             City
                             <input
                                 name="city"
-                                value={providerForm.city}
+                                value={
+                                    providerForm.city
+                                }
                                 onChange={handleProviderChange}
                                 required
                                 placeholder="Pune"
@@ -262,7 +464,9 @@ const ProviderDashboard = () => {
                             Phone
                             <input
                                 name="phone"
-                                value={providerForm.phone}
+                                value={
+                                    providerForm.phone
+                                }
                                 onChange={handleProviderChange}
                                 placeholder="+91..."
                             />
@@ -272,7 +476,9 @@ const ProviderDashboard = () => {
                             Address
                             <input
                                 name="address"
-                                value={providerForm.address}
+                                value={
+                                    providerForm.address
+                                }
                                 onChange={handleProviderChange}
                                 placeholder="Full address"
                             />
@@ -282,7 +488,9 @@ const ProviderDashboard = () => {
                             className="btn btn-primary"
                             disabled={submitting}
                         >
-                            Create Provider Profile
+                            {submitting
+                                ? "Creating..."
+                                : "Create Provider Profile"}
                         </button>
                     </form>
                 </section>
@@ -291,6 +499,7 @@ const ProviderDashboard = () => {
                     <section className="provider-summary">
                         <div>
                             <span>Organization</span>
+
                             <strong>
                                 {provider.organization}
                             </strong>
@@ -298,11 +507,15 @@ const ProviderDashboard = () => {
 
                         <div>
                             <span>City</span>
-                            <strong>{provider.city}</strong>
+
+                            <strong>
+                                {provider.city}
+                            </strong>
                         </div>
 
                         <div>
                             <span>Verification</span>
+
                             <strong>
                                 {provider.verified
                                     ? "✓ Verified"
@@ -312,6 +525,7 @@ const ProviderDashboard = () => {
 
                         <div>
                             <span>Resources</span>
+
                             <strong>
                                 {resources.length}
                             </strong>
@@ -321,254 +535,466 @@ const ProviderDashboard = () => {
                     {!provider.verified && (
                         <div className="alert warning">
                             Your provider account is awaiting
-                            verification. Resource creation will
+                            verification. Resource management will
                             become available after verification.
                         </div>
                     )}
 
                     {provider.verified && (
-                        <section className="dashboard-section">
-                            <div className="section-heading">
-                                <span>STEP 2</span>
-                                <h2>Add emergency resource</h2>
-                            </div>
+                        <>
+                            {/* ADD RESOURCE */}
+                            <section className="dashboard-section">
+                                <div className="section-heading">
+                                    <span>STEP 2</span>
 
-                            <form
-                                className="form-grid"
-                                onSubmit={createResource}
-                            >
-                                <label>
-                                    Resource Name
-                                    <input
-                                        name="name"
-                                        value={resourceForm.name}
-                                        onChange={handleResourceChange}
-                                        required
-                                        placeholder="O+ Blood"
-                                    />
-                                </label>
+                                    <h2>
+                                        Add emergency resource
+                                    </h2>
+                                </div>
 
-                                <label>
-                                    Category
-                                    <select
-                                        name="category"
-                                        value={
-                                            resourceForm.category
-                                        }
-                                        onChange={handleResourceChange}
-                                    >
-                                        {categories.map(
-                                            (category) => (
-                                                <option
-                                                    key={category}
-                                                    value={category}
-                                                >
-                                                    {category.replaceAll(
-                                                        "_",
-                                                        " "
-                                                    )}
-                                                </option>
-                                            )
-                                        )}
-                                    </select>
-                                </label>
-
-                                <label>
-                                    Quantity
-                                    <input
-                                        type="number"
-                                        min="0"
-                                        name="quantity"
-                                        value={
-                                            resourceForm.quantity
-                                        }
-                                        onChange={handleResourceChange}
-                                    />
-                                </label>
-
-                                <label>
-                                    City
-                                    <input
-                                        name="city"
-                                        value={resourceForm.city}
-                                        onChange={handleResourceChange}
-                                        required
-                                    />
-                                </label>
-
-                                <label className="full-width">
-                                    Address
-                                    <input
-                                        name="address"
-                                        value={
-                                            resourceForm.address
-                                        }
-                                        onChange={handleResourceChange}
-                                    />
-                                </label>
-
-                                <label className="full-width">
-                                    Description
-                                    <textarea
-                                        name="description"
-                                        value={
-                                            resourceForm.description
-                                        }
-                                        onChange={handleResourceChange}
-                                        rows="3"
-                                    />
-                                </label>
-
-                                <label className="checkbox-label">
-                                    <input
-                                        type="checkbox"
-                                        name="available"
-                                        checked={
-                                            resourceForm.available
-                                        }
-                                        onChange={handleResourceChange}
-                                    />
-                                    Currently available
-                                </label>
-
-                                <button
-                                    className="btn btn-primary"
-                                    disabled={submitting}
+                                <form
+                                    className="form-grid"
+                                    onSubmit={createResource}
                                 >
-                                    Add Resource
-                                </button>
-                            </form>
-                        </section>
-                    )}
+                                    {/* AVAILABILITY SWITCH */}
+                                    <label className="checkbox-label full-width">
+                                        <input
+                                            type="checkbox"
+                                            name="available"
+                                            checked={
+                                                Number(
+                                                    resourceForm.quantity
+                                                ) > 0 &&
+                                                resourceForm.available
+                                            }
+                                            disabled={
+                                                Number(
+                                                    resourceForm.quantity
+                                                ) === 0
+                                            }
+                                            onChange={
+                                                handleResourceChange
+                                            }
+                                        />
 
-                    <section className="dashboard-section">
-                        <div className="section-heading">
-                            <span>RESOURCES</span>
-                            <h2>Manage availability</h2>
-                        </div>
+                                        Currently available
+                                    </label>
 
-                        <div className="resource-grid">
-                            {resources.map((resource) => (
-                                <article
-                                    className="resource-card"
-                                    key={resource.id}
-                                >
-                                    <span className="category-badge">
-                                        {resource.category.replaceAll(
-                                            "_",
-                                            " "
-                                        )}
-                                    </span>
+                                    {/* CATEGORY */}
+                                    <label>
+                                        Category
 
-                                    <h3>{resource.name}</h3>
+                                        <select
+                                            name="category"
+                                            value={
+                                                resourceForm.category
+                                            }
+                                            onChange={
+                                                handleCategoryChange
+                                            }
+                                            required
+                                        >
+                                            {categories.map(
+                                                ([
+                                                    value,
+                                                    label
+                                                ]) => (
+                                                    <option
+                                                        key={value}
+                                                        value={value}
+                                                    >
+                                                        {label}
+                                                    </option>
+                                                )
+                                            )}
+                                        </select>
+                                    </label>
 
-                                    <p>
-                                        Quantity:{" "}
-                                        {resource.quantity}
-                                    </p>
+                                    {/* RESOURCE NAME */}
+                                    <label>
+                                        Resource Name
+
+                                        <select
+                                            name="name"
+                                            value={
+                                                resourceForm.name
+                                            }
+                                            onChange={
+                                                handleResourceChange
+                                            }
+                                            required
+                                        >
+                                            {(
+                                                resourceOptions[
+                                                    resourceForm.category
+                                                ] || []
+                                            ).map(
+                                                (
+                                                    resourceName
+                                                ) => (
+                                                    <option
+                                                        key={
+                                                            resourceName
+                                                        }
+                                                        value={
+                                                            resourceName
+                                                        }
+                                                    >
+                                                        {
+                                                            resourceName
+                                                        }
+                                                    </option>
+                                                )
+                                            )}
+                                        </select>
+                                    </label>
+
+                                    {/* QUANTITY */}
+                                    <label>
+                                        Quantity
+
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            step="1"
+                                            name="quantity"
+                                            value={
+                                                resourceForm.quantity
+                                            }
+                                            onChange={
+                                                handleResourceChange
+                                            }
+                                            required
+                                        />
+                                    </label>
+
+                                    {/* CITY */}
+                                    <label>
+                                        City
+
+                                        <input
+                                            name="city"
+                                            value={
+                                                resourceForm.city
+                                            }
+                                            onChange={
+                                                handleResourceChange
+                                            }
+                                            required
+                                        />
+                                    </label>
+
+                                    {/* ADDRESS */}
+                                    <label className="full-width">
+                                        Address
+
+                                        <input
+                                            name="address"
+                                            value={
+                                                resourceForm.address
+                                            }
+                                            onChange={
+                                                handleResourceChange
+                                            }
+                                            placeholder="Resource location"
+                                        />
+                                    </label>
+
+                                    {/* DESCRIPTION */}
+                                    <label className="full-width">
+                                        Description
+
+                                        <textarea
+                                            name="description"
+                                            value={
+                                                resourceForm.description
+                                            }
+                                            onChange={
+                                                handleResourceChange
+                                            }
+                                            rows="3"
+                                            placeholder="Add additional emergency resource information..."
+                                        />
+                                    </label>
 
                                     <button
-                                        className="btn btn-outline btn-full"
-                                        onClick={() =>
-                                            updateAvailability(
-                                                resource
-                                            )
+                                        type="submit"
+                                        className="btn btn-primary"
+                                        disabled={
+                                            submitting
                                         }
                                     >
-                                        {resource.available
-                                            ? "Mark Unavailable"
-                                            : "Mark Available"}
+                                        {submitting
+                                            ? "Adding..."
+                                            : "Add Resource"}
                                     </button>
-                                </article>
-                            ))}
-                        </div>
-                    </section>
+                                </form>
+                            </section>
 
-                    <section className="dashboard-section">
-                        <div className="section-heading">
-                            <span>EMERGENCY REQUESTS</span>
-                            <h2>Incoming requests</h2>
-                        </div>
+                            {/* RESOURCE MANAGEMENT */}
+                            <section className="dashboard-section">
+                                <div className="section-heading">
+                                    <span>
+                                        RESOURCE MANAGEMENT
+                                    </span>
 
-                        {requests.length === 0 ? (
-                            <div className="empty-state">
-                                <div>📭</div>
-                                <h3>No incoming requests</h3>
-                            </div>
-                        ) : (
-                            <div className="request-list">
-                                {requests.map((request) => (
-                                    <article
-                                        className="request-item"
-                                        key={request.id}
-                                    >
-                                        <div>
-                                            <span className="category-badge">
-                                                {request.priority}
-                                            </span>
+                                    <h2>
+                                        Quantity & availability
+                                    </h2>
+                                </div>
 
-                                            <h3>
-                                                {request.resource.name}
-                                            </h3>
+                                {resources.length === 0 ? (
+                                    <div className="empty-state">
+                                        <div>📦</div>
 
-                                            <p>
-                                                Requested by:{" "}
-                                                {request.user.name}
-                                            </p>
+                                        <h3>
+                                            No resources added yet
+                                        </h3>
 
-                                            <p>
-                                                Quantity:{" "}
-                                                {request.quantity}
-                                            </p>
+                                        <p>
+                                            Add your first emergency
+                                            resource above.
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <div className="resource-grid">
+                                        {resources.map(
+                                            (resource) => (
+                                                <article
+                                                    className="resource-card"
+                                                    key={
+                                                        resource.id
+                                                    }
+                                                >
+                                                    <span className="category-badge">
+                                                        {resource.category.replaceAll(
+                                                            "_",
+                                                            " "
+                                                        )}
+                                                    </span>
 
-                                            <p>
-                                                Message:{" "}
-                                                {request.message ||
-                                                    "No message"}
-                                            </p>
-                                        </div>
+                                                    <h3>
+                                                        {
+                                                            resource.name
+                                                        }
+                                                    </h3>
 
-                                        <div className="request-actions">
-                                            <span
-                                                className={`status status-${request.status.toLowerCase()}`}
-                                            >
-                                                {request.status}
-                                            </span>
+                                                    <p>
+                                                        Current
+                                                        quantity:{" "}
+                                                        <strong>
+                                                            {
+                                                                resource.quantity
+                                                            }
+                                                        </strong>
+                                                    </p>
 
-                                            {request.status ===
-                                                "PENDING" && (
-                                                    <>
-                                                        <button
-                                                            className="btn btn-primary"
-                                                            onClick={() =>
-                                                                updateRequest(
-                                                                    request.id,
-                                                                    "ACCEPTED"
+                                                    <p>
+                                                        Status:{" "}
+                                                        <strong>
+                                                            {resource.available
+                                                                ? "Available"
+                                                                : "Unavailable"}
+                                                        </strong>
+                                                    </p>
+
+                                                    <label>
+                                                        Edit quantity
+
+                                                        <input
+                                                            type="number"
+                                                            min="0"
+                                                            step="1"
+                                                            value={
+                                                                quantityDrafts[
+                                                                    resource
+                                                                        .id
+                                                                ] ??
+                                                                resource.quantity
+                                                            }
+                                                            onChange={(
+                                                                event
+                                                            ) =>
+                                                                handleQuantityChange(
+                                                                    resource.id,
+                                                                    event
+                                                                        .target
+                                                                        .value
                                                                 )
                                                             }
-                                                        >
-                                                            Accept
-                                                        </button>
+                                                        />
+                                                    </label>
 
-                                                        <button
-                                                            className="btn btn-danger"
-                                                            onClick={() =>
-                                                                updateRequest(
-                                                                    request.id,
-                                                                    "REJECTED"
-                                                                )
+                                                    <button
+                                                        type="button"
+                                                        className="btn btn-primary btn-full"
+                                                        disabled={
+                                                            updatingResourceId ===
+                                                            resource.id
+                                                        }
+                                                        onClick={() =>
+                                                            updateQuantity(
+                                                                resource
+                                                            )
+                                                        }
+                                                    >
+                                                        {updatingResourceId ===
+                                                        resource.id
+                                                            ? "Updating..."
+                                                            : "Save Quantity"}
+                                                    </button>
+
+                                                    <button
+                                                        type="button"
+                                                        className="btn btn-outline btn-full"
+                                                        disabled={
+                                                            updatingResourceId ===
+                                                                resource.id ||
+                                                            Number(
+                                                                resource.quantity
+                                                            ) === 0
+                                                        }
+                                                        onClick={() =>
+                                                            updateAvailability(
+                                                                resource
+                                                            )
+                                                        }
+                                                    >
+                                                        {resource.available
+                                                            ? "Mark Unavailable"
+                                                            : "Mark Available"}
+                                                    </button>
+
+                                                    {Number(
+                                                        resource.quantity
+                                                    ) === 0 && (
+                                                        <small>
+                                                            Quantity is 0, so
+                                                            this resource is
+                                                            automatically
+                                                            unavailable.
+                                                        </small>
+                                                    )}
+                                                </article>
+                                            )
+                                        )}
+                                    </div>
+                                )}
+                            </section>
+
+                            {/* REQUESTS */}
+                            <section className="dashboard-section">
+                                <div className="section-heading">
+                                    <span>
+                                        EMERGENCY REQUESTS
+                                    </span>
+
+                                    <h2>
+                                        Incoming requests
+                                    </h2>
+                                </div>
+
+                                {requests.length === 0 ? (
+                                    <div className="empty-state">
+                                        <div>📭</div>
+
+                                        <h3>
+                                            No incoming requests
+                                        </h3>
+                                    </div>
+                                ) : (
+                                    <div className="request-list">
+                                        {requests.map(
+                                            (request) => (
+                                                <article
+                                                    className="request-item"
+                                                    key={
+                                                        request.id
+                                                    }
+                                                >
+                                                    <div>
+                                                        <span className="category-badge">
+                                                            {
+                                                                request.priority
                                                             }
+                                                        </span>
+
+                                                        <h3>
+                                                            {
+                                                                request
+                                                                    .resource
+                                                                    .name
+                                                            }
+                                                        </h3>
+
+                                                        <p>
+                                                            Requested by:{" "}
+                                                            {
+                                                                request.user
+                                                                    .name
+                                                            }
+                                                        </p>
+
+                                                        <p>
+                                                            Quantity:{" "}
+                                                            {
+                                                                request.quantity
+                                                            }
+                                                        </p>
+
+                                                        <p>
+                                                            Message:{" "}
+                                                            {request.message ||
+                                                                "No message"}
+                                                        </p>
+                                                    </div>
+
+                                                    <div className="request-actions">
+                                                        <span
+                                                            className={`status status-${request.status.toLowerCase()}`}
                                                         >
-                                                            Reject
-                                                        </button>
-                                                    </>
-                                                )}
-                                        </div>
-                                    </article>
-                                ))}
-                            </div>
-                        )}
-                    </section>
+                                                            {
+                                                                request.status
+                                                            }
+                                                        </span>
+
+                                                        {request.status ===
+                                                            "PENDING" && (
+                                                            <>
+                                                                <button
+                                                                    className="btn btn-primary"
+                                                                    onClick={() =>
+                                                                        updateRequest(
+                                                                            request.id,
+                                                                            "ACCEPTED"
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    Accept
+                                                                </button>
+
+                                                                <button
+                                                                    className="btn btn-danger"
+                                                                    onClick={() =>
+                                                                        updateRequest(
+                                                                            request.id,
+                                                                            "REJECTED"
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    Reject
+                                                                </button>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                </article>
+                                            )
+                                        )}
+                                    </div>
+                                )}
+                            </section>
+                        </>
+                    )}
                 </>
             )}
         </main>

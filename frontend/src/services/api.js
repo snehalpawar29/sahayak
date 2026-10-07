@@ -21,29 +21,74 @@ const request = async (endpoint, options = {}) => {
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    throw new Error(
-      data.message || "Something went wrong"
-    );
+    throw new Error(data.message || "Something went wrong");
   }
 
   return data;
 };
 
-export const api = {
-  register: (userData) =>
+const api = {
+  // =========================
+  // AUTH
+  // =========================
+
+  register: (data) =>
     request("/auth/register", {
       method: "POST",
-      body: JSON.stringify(userData)
+      body: JSON.stringify(data)
     }),
 
-  login: (credentials) =>
+  login: (data) =>
     request("/auth/login", {
       method: "POST",
-      body: JSON.stringify(credentials)
+      body: JSON.stringify(data)
     }),
 
   getMe: () =>
     request("/auth/me"),
+
+  // =========================
+  // PROVIDERS
+  // =========================
+
+  getProviders: (params = "") =>
+    request(`/providers${params}`),
+
+  getProviderProfile: () =>
+    request("/providers/profile"),
+
+  getProviderDashboard: () =>
+    request("/providers/dashboard"),
+
+  createProvider: (data) =>
+    request("/providers", {
+      method: "POST",
+      body: JSON.stringify(data)
+    }),
+
+  // =========================
+  // ADMIN
+  // =========================
+
+  getPendingProviders: () =>
+    request("/admin/providers/pending"),
+
+  getProviderById: (id) =>
+    request(`/admin/providers/${id}`),
+
+  approveProvider: (id) =>
+    request(`/admin/providers/${id}/approve`, {
+      method: "PATCH"
+    }),
+
+  rejectProvider: (id) =>
+    request(`/admin/providers/${id}/reject`, {
+      method: "DELETE"
+    }),
+
+  // =========================
+  // RESOURCES
+  // =========================
 
   getResources: (params = "") =>
     request(`/resources${params}`),
@@ -51,31 +96,31 @@ export const api = {
   getResource: (id) =>
     request(`/resources/${id}`),
 
-  getProviders: (params = "") =>
-    request(`/providers${params}`),
-
-  createProvider: (providerData) =>
-    request("/providers", {
-      method: "POST",
-      body: JSON.stringify(providerData)
-    }),
-
-  createResource: (resourceData) =>
+  createResource: (data) =>
     request("/resources", {
       method: "POST",
-      body: JSON.stringify(resourceData)
+      body: JSON.stringify(data)
     }),
 
-  updateResource: (id, resourceData) =>
+  updateResource: (id, data) =>
     request(`/resources/${id}`, {
       method: "PATCH",
-      body: JSON.stringify(resourceData)
+      body: JSON.stringify(data)
     }),
 
-  createRequest: (requestData) =>
+  deleteResource: (id) =>
+    request(`/resources/${id}`, {
+      method: "DELETE"
+    }),
+
+  // =========================
+  // EMERGENCY REQUESTS
+  // =========================
+
+  createRequest: (data) =>
     request("/requests", {
       method: "POST",
-      body: JSON.stringify(requestData)
+      body: JSON.stringify(data)
     }),
 
   getMyRequests: () =>

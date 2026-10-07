@@ -52,42 +52,42 @@ model User {
 }
 
 model Provider {
-  id         Int        @id @default(autoincrement())
+  id           Int        @id @default(autoincrement())
   organization String
-  type       String
-  city       String
-  address    String?
-  phone      String?
-  verified   Boolean    @default(false)
-  createdAt  DateTime   @default(now())
-  updatedAt  DateTime   @updatedAt
+  type         String
+  city         String
+  address      String?
+  phone        String?
+  verified     Boolean    @default(false)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 
-  userId     Int        @unique
-  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       Int        @unique
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  resources  Resource[]
+  resources    Resource[]
 }
 
 model Resource {
-  id           Int              @id @default(autoincrement())
-  name         String
-  category     ResourceCategory
-  quantity     Int              @default(0)
-  available    Boolean          @default(false)
-  city         String
-  address      String?
-  description  String?
-  updatedAt    DateTime         @updatedAt
-  createdAt    DateTime         @default(now())
+  id                Int              @id @default(autoincrement())
+  name              String
+  category          ResourceCategory
+  quantity          Int              @default(0)
+  available         Boolean          @default(false)
+  city              String
+  address           String?
+  description       String?
+  updatedAt         DateTime         @updatedAt
+  createdAt         DateTime         @default(now())
 
-  providerId   Int
-  provider     Provider         @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  providerId        Int
+  provider          Provider         @relation(fields: [providerId], references: [id], onDelete: Cascade)
 
   emergencyRequests EmergencyRequest[]
 }
 
 model EmergencyRequest {
-  id          Int            @id @default(autoincrement())
+  id          Int             @id @default(autoincrement())
   quantity    Int
   priority    RequestPriority @default(MEDIUM)
   status      RequestStatus   @default(PENDING)
@@ -98,6 +98,6 @@ model EmergencyRequest {
   userId      Int
   resourceId  Int
 
-  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  resource    Resource       @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resource    Resource        @relation(fields: [resourceId], references: [id], onDelete: Cascade)
 }

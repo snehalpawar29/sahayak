@@ -1,37 +1,31 @@
 {
-  "name": "backend",
-  "type": "module",
+  "name": "sahayak-backend",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "private": true,
+  "type": "module",
+  "description": "Sahayak Emergency Resource Finder backend",
+  "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "postinstall": "prisma skills sync || exit 0",
-    "contract:emit": "prisma contract emit",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
+    "prisma:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
-    "@prisma/adapter-pg": "^7.10.0",
-    "@prisma/client": "^7.2.0",
-    "@prisma/orm-postgres": "^8.0.0-rc.14",
+    "@prisma/adapter-pg": "7.2.0",
+    "@prisma/client": "7.2.0",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "dotenv": "^18.0.5",
     "express": "^5.2.1",
     "express-rate-limit": "^8.7.1",
     "jsonwebtoken": "^9.0.3",
-    "pg": "^8.23.1",
-    "prisma": "^7.2.0"
+    "pg": "^8.23.1"
   },
   "devDependencies": {
-    "@prisma/cli-engine": "^0.6.2",
-    "@types/node": "^26.6.4",
-    "nodemon": "^3.1.14"
+    "nodemon": "^3.1.14",
+    "prisma": "7.2.0"
   }
 }

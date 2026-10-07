@@ -1,9 +1,7 @@
-import {prisma} from "../config/prisma.js";
+import { prisma } from "../config/prisma.js";
 
 const requireVerifiedProvider = async (req, res, next) => {
   try {
-    // Authentication middleware should already have
-    // populated req.user.
     if (!req.user) {
       return res.status(401).json({
         success: false,
@@ -11,7 +9,6 @@ const requireVerifiedProvider = async (req, res, next) => {
       });
     }
 
-    // Only PROVIDER users can access provider resource APIs.
     if (req.user.role !== "PROVIDER") {
       return res.status(403).json({
         success: false,
@@ -19,7 +16,6 @@ const requireVerifiedProvider = async (req, res, next) => {
       });
     }
 
-    // Support common JWT payload formats.
     const userId =
       req.user.id ??
       req.user.userId ??
@@ -32,14 +28,12 @@ const requireVerifiedProvider = async (req, res, next) => {
       });
     }
 
-    // Find the provider profile belonging to this user.
     const provider = await prisma.provider.findUnique({
       where: {
         userId: Number(userId)
       }
     });
 
-    // Provider profile does not exist.
     if (!provider) {
       return res.status(403).json({
         success: false,
@@ -48,7 +42,6 @@ const requireVerifiedProvider = async (req, res, next) => {
       });
     }
 
-    // Provider exists but has not been approved.
     if (!provider.verified) {
       return res.status(403).json({
         success: false,
@@ -57,7 +50,6 @@ const requireVerifiedProvider = async (req, res, next) => {
       });
     }
 
-    // Make provider available to controllers.
     req.provider = provider;
 
     next();
@@ -73,5 +65,7 @@ const requireVerifiedProvider = async (req, res, next) => {
     });
   }
 };
+
+export { requireVerifiedProvider };
 
 export default requireVerifiedProvider;

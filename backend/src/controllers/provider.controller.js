@@ -1,11 +1,5 @@
 import { prisma } from "../config/prisma.js";
 
-/*
-|--------------------------------------------------------------------------
-| CREATE PROVIDER PROFILE
-|--------------------------------------------------------------------------
-*/
-
 export const createProvider = async (req, res) => {
   try {
     if (!req.user) {
@@ -17,7 +11,7 @@ export const createProvider = async (req, res) => {
 
     const userId = Number(req.user.id);
 
-    if (!Number.isInteger(userId)) {
+    if (!Number.isInteger(userId) || userId <= 0) {
       return res.status(401).json({
         success: false,
         message: "Invalid user authentication"
@@ -32,16 +26,16 @@ export const createProvider = async (req, res) => {
       phone
     } = req.body;
 
-    if (!organization || !type || !city) {
+    if (
+      !organization?.trim() ||
+      !type?.trim() ||
+      !city?.trim()
+    ) {
       return res.status(400).json({
         success: false,
         message: "Organization, type and city are required"
       });
     }
-
-    /*
-     * Make sure this user is a PROVIDER.
-     */
 
     const user = await prisma.user.findUnique({
       where: {
@@ -63,10 +57,6 @@ export const createProvider = async (req, res) => {
       });
     }
 
-    /*
-     * Check whether provider profile already exists.
-     */
-
     const existingProvider = await prisma.provider.findUnique({
       where: {
         userId
@@ -82,10 +72,6 @@ export const createProvider = async (req, res) => {
         }
       });
     }
-
-    /*
-     * New providers always start as unverified.
-     */
 
     const provider = await prisma.provider.create({
       data: {
@@ -116,13 +102,6 @@ export const createProvider = async (req, res) => {
     });
   }
 };
-
-
-/*
-|--------------------------------------------------------------------------
-| GET MY PROVIDER PROFILE
-|--------------------------------------------------------------------------
-*/
 
 export const getProviderProfile = async (req, res) => {
   try {
@@ -175,223 +154,6 @@ export const getProviderProfile = async (req, res) => {
   }
 };
 
-
-/*
-|--------------------------------------------------------------------------
-| GET PENDING PROVIDERS
-| ADMIN ONLY
-|--------------------------------------------------------------------------
-*/
-
-export const getPendingProviders = async (req, res) => {
-  try {
-    const providers = await prisma.provider.findMany({
-      where: {
-        verified: false
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            role: true,
-            city: true,
-            createdAt: true
-          }
-        }
-      },
-      orderBy: {
-        createdAt: "asc"
-      }
-    });
-
-    return res.status(200).json({
-      success: true,
-      count: providers.length,
-      data: {
-        providers
-      }
-    });
-  } catch (error) {
-    console.error("Get pending providers error:", error);
-
-    return res.status(500).json({
-      success: false,
-      message: "Failed to fetch pending providers"
-    });
-  }
-};
-
-
-/*
-|--------------------------------------------------------------------------
-| APPROVE PROVIDER
-| ADMIN ONLY
-|--------------------------------------------------------------------------
-*/
-
-export const approveProvider = async (req, res) => {
-  try {
-    const providerId = Number(req.params.id);
-
-    if (!Number.isInteger(providerId)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid provider ID"
-      });
-    }
-
-    const provider = await prisma.provider.findUnique({
-      where: {
-        id: providerId
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            role: true
-          }
-        }
-      }
-    });
-
-    if (!provider) {
-      return res.status(404).json({
-        success: false,
-        message: "Provider not found"
-      });
-    }
-
-    if (provider.verified) {
-      return res.status(400).json({
-        success: false,
-        message: "Provider is already verified"
-      });
-    }
-
-    const updatedProvider = await prisma.provider.update({
-      where: {
-        id: providerId
-      },
-      data: {
-        verified: true
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            role: true
-          }
-        }
-      }
-    });
-
-    return res.status(200).json({
-      success: true,
-      message: "Provider approved successfully",
-      data: {
-        provider: updatedProvider
-      }
-    });
-  } catch (error) {
-    console.error("Approve provider error:", error);
-
-    return res.status(500).json({
-      success: false,
-      message: "Failed to approve provider"
-    });
-  }
-};
-
-
-/*
-|--------------------------------------------------------------------------
-| REJECT PROVIDER
-| ADMIN ONLY
-|--------------------------------------------------------------------------
-*/
-
-export const rejectProvider = async (req, res) => {
-  try {
-    const providerId = Number(req.params.id);
-
-    if (!Number.isInteger(providerId)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid provider ID"
-      });
-    }
-
-    const provider = await prisma.provider.findUnique({
-      where: {
-        id: providerId
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            role: true
-          }
-        }
-      }
-    });
-
-    if (!provider) {
-      return res.status(404).json({
-        success: false,
-        message: "Provider not found"
-      });
-    }
-
-    const updatedProvider = await prisma.provider.update({
-      where: {
-        id: providerId
-      },
-      data: {
-        verified: false
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            role: true
-          }
-        }
-      }
-    });
-
-    return res.status(200).json({
-      success: true,
-      message: "Provider rejected successfully",
-      data: {
-        provider: updatedProvider
-      }
-    });
-  } catch (error) {
-    console.error("Reject provider error:", error);
-
-    return res.status(500).json({
-      success: false,
-      message: "Failed to reject provider"
-    });
-  }
-};
-
-/*
-|--------------------------------------------------------------------------
-| PROVIDER DASHBOARD
-|--------------------------------------------------------------------------
-*/
-
 export const getProviderDashboard = async (req, res) => {
   try {
     if (!req.user) {
@@ -410,7 +172,7 @@ export const getProviderDashboard = async (req, res) => {
 
     const userId = Number(req.user.id);
 
-    if (!Number.isInteger(userId)) {
+    if (!Number.isInteger(userId) || userId <= 0) {
       return res.status(401).json({
         success: false,
         message: "Invalid user authentication"
@@ -462,14 +224,6 @@ export const getProviderDashboard = async (req, res) => {
     });
   }
 };
-
-
-/*
-|--------------------------------------------------------------------------
-| GET VERIFIED PROVIDERS
-| PUBLIC
-|--------------------------------------------------------------------------
-*/
 
 export const getProviders = async (req, res) => {
   try {

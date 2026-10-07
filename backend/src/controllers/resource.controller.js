@@ -1,5 +1,34 @@
-import {prisma} from "../config/prisma.js";
+import { prisma } from "../config/prisma.js";
 
+const validCategories = [
+  "BLOOD",
+  "HOSPITAL_BED",
+  "MEDICINE",
+  "AMBULANCE",
+  "SHELTER",
+  "FOOD",
+  "WATER"
+];
+
+const parsePositiveId = (value) => {
+  const id = Number(value);
+
+  if (!Number.isInteger(id) || id <= 0) {
+    return null;
+  }
+
+  return id;
+};
+
+const parseQuantity = (value) => {
+  const quantity = Number(value);
+
+  if (!Number.isInteger(quantity) || quantity < 0) {
+    return null;
+  }
+
+  return quantity;
+};
 
 /*
 |--------------------------------------------------------------------------
@@ -9,115 +38,100 @@ import {prisma} from "../config/prisma.js";
 
 export const createResource = async (req, res) => {
   try {
+    if (!req.provider) {
+      return res.status(403).json({
+        success: false,
+        message: "Verified provider authorization required."
+      });
+    }
+
     const {
       name,
       category,
-      quantity,
+      quantity = 0,
       available,
       city,
       address,
       description
     } = req.body;
 
-    /*
-     * req.provider was populated by
-     * requireVerifiedProvider middleware.
-     */
-
-    if (!req.provider) {
-      return res.status(403).json({
-        success: false,
-        message: "Verified provider authorization required"
-      });
-    }
-
-    /*
-     * Validate required fields.
-     */
-
-    if (!name || !category || !city) {
+    if (!name?.trim()) {
       return res.status(400).json({
         success: false,
-        message:
-          "Name, category and city are required"
+        message: "Resource name is required."
       });
     }
 
-    /*
-     * Quantity must be a non-negative number.
-     */
-
-    const resourceQuantity =
-      quantity === undefined
-        ? 0
-        : Number(quantity);
-
-    if (
-      !Number.isInteger(resourceQuantity) ||
-      resourceQuantity < 0
-    ) {
+    if (!validCategories.includes(category)) {
       return res.status(400).json({
         success: false,
-        message:
-          "Quantity must be a non-negative integer"
+        message: "Invalid resource category."
+      });
+    }
+
+    if (!city?.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "City is required."
+      });
+    }
+
+    const parsedQuantity = parseQuantity(quantity);
+
+    if (parsedQuantity === null) {
+      return res.status(400).json({
+        success: false,
+        message: "Quantity must be a non-negative integer."
       });
     }
 
     /*
-     * Create resource.
-     *
-     * providerId comes from the authenticated
-     * provider, NOT from the request body.
-     *
-     * This is important for security.
+     * Quantity controls whether the resource can actually be available.
+     * A quantity of 0 always means unavailable.
      */
+    const finalAvailable =
+      parsedQuantity > 0 && available === true;
 
     const resource = await prisma.resource.create({
       data: {
         name: name.trim(),
         category,
-        quantity: resourceQuantity,
-        available:
-          available === undefined
-            ? resourceQuantity > 0
-            : Boolean(available),
+        quantity: parsedQuantity,
+        available: finalAvailable,
         city: city.trim(),
         address: address?.trim() || null,
         description: description?.trim() || null,
         providerId: req.provider.id
+      },
+      include: {
+        provider: {
+          select: {
+            id: true,
+            organization: true,
+            type: true,
+            city: true,
+            address: true,
+            phone: true,
+            verified: true
+          }
+        }
       }
     });
 
     return res.status(201).json({
       success: true,
-      message: "Resource created successfully",
-      data: {
-        resource
-      }
+      message: "Resource created successfully.",
+      data: resource
     });
   } catch (error) {
-    console.error(
-      "Create resource error:",
-      error
-    );
-
-    /*
-     * Prisma enum validation error.
-     */
-    if (error?.code === "P2000") {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid resource data"
-      });
-    }
+    console.error("Create resource error:", error);
 
     return res.status(500).json({
       success: false,
-      message: "Failed to create resource"
+      message: "Failed to create resource."
     });
   }
 };
-
 
 /*
 |--------------------------------------------------------------------------
@@ -129,10 +143,15 @@ export const getResources = async (req, res) => {
   try {
     const {
       city,
-      category
+      category,
+      available
     } = req.query;
 
-    const where = {};
+    const where = {
+      provider: {
+        verified: true
+      }
+    };
 
     if (city) {
       where.city = {
@@ -142,7 +161,21 @@ export const getResources = async (req, res) => {
     }
 
     if (category) {
+      if (!validCategories.includes(category)) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid resource category."
+        });
+      }
+
       where.category = category;
+    }
+
+    if (available === "true") {
+      where.available = true;
+      where.quantity = {
+        gt: 0
+      };
     }
 
     const resources = await prisma.resource.findMany({
@@ -154,6 +187,8 @@ export const getResources = async (req, res) => {
             organization: true,
             type: true,
             city: true,
+            address: true,
+            phone: true,
             verified: true
           }
         }
@@ -163,37 +198,22 @@ export const getResources = async (req, res) => {
       }
     });
 
-    /*
-     * Only verified provider resources should
-     * appear in the public resource finder.
-     */
-
-    const verifiedResources =
-      resources.filter(
-        (resource) =>
-          resource.provider.verified === true
-      );
-
     return res.status(200).json({
       success: true,
-      count: verifiedResources.length,
+      count: resources.length,
       data: {
-        resources: verifiedResources
+        resources
       }
     });
   } catch (error) {
-    console.error(
-      "Get resources error:",
-      error
-    );
+    console.error("Get resources error:", error);
 
     return res.status(500).json({
       success: false,
-      message: "Failed to fetch resources"
+      message: "Failed to fetch resources."
     });
   }
 };
-
 
 /*
 |--------------------------------------------------------------------------
@@ -203,73 +223,57 @@ export const getResources = async (req, res) => {
 
 export const getResourceById = async (req, res) => {
   try {
-    const resourceId = Number(req.params.id);
+    const resourceId = parsePositiveId(req.params.id);
 
-    if (!Number.isInteger(resourceId)) {
+    if (!resourceId) {
       return res.status(400).json({
         success: false,
-        message: "Invalid resource ID"
+        message: "Invalid resource ID."
       });
     }
 
-    const resource =
-      await prisma.resource.findUnique({
-        where: {
-          id: resourceId
-        },
-        include: {
-          provider: {
-            select: {
-              id: true,
-              organization: true,
-              type: true,
-              city: true,
-              address: true,
-              phone: true,
-              verified: true
-            }
+    const resource = await prisma.resource.findFirst({
+      where: {
+        id: resourceId,
+        provider: {
+          verified: true
+        }
+      },
+      include: {
+        provider: {
+          select: {
+            id: true,
+            organization: true,
+            type: true,
+            city: true,
+            address: true,
+            phone: true,
+            verified: true
           }
         }
-      });
+      }
+    });
 
     if (!resource) {
       return res.status(404).json({
         success: false,
-        message: "Resource not found"
-      });
-    }
-
-    /*
-     * Don't expose resources belonging to
-     * unverified providers.
-     */
-
-    if (!resource.provider.verified) {
-      return res.status(404).json({
-        success: false,
-        message: "Resource not available"
+        message: "Resource not found."
       });
     }
 
     return res.status(200).json({
       success: true,
-      data: {
-        resource
-      }
+      data: resource
     });
   } catch (error) {
-    console.error(
-      "Get resource error:",
-      error
-    );
+    console.error("Get resource error:", error);
 
     return res.status(500).json({
       success: false,
-      message: "Failed to fetch resource"
+      message: "Failed to fetch resource."
     });
   }
 };
-
 
 /*
 |--------------------------------------------------------------------------
@@ -279,42 +283,33 @@ export const getResourceById = async (req, res) => {
 
 export const updateResource = async (req, res) => {
   try {
-    const resourceId = Number(req.params.id);
+    const resourceId = parsePositiveId(req.params.id);
 
-    if (!Number.isInteger(resourceId)) {
+    if (!resourceId) {
       return res.status(400).json({
         success: false,
-        message: "Invalid resource ID"
+        message: "Invalid resource ID."
       });
     }
 
-    /*
-     * Make sure the resource belongs to the
-     * currently authenticated provider.
-     */
-
-    const existingResource =
-      await prisma.resource.findUnique({
-        where: {
-          id: resourceId
-        }
+    if (!req.provider) {
+      return res.status(403).json({
+        success: false,
+        message: "Verified provider authorization required."
       });
+    }
+
+    const existingResource = await prisma.resource.findFirst({
+      where: {
+        id: resourceId,
+        providerId: req.provider.id
+      }
+    });
 
     if (!existingResource) {
       return res.status(404).json({
         success: false,
-        message: "Resource not found"
-      });
-    }
-
-    if (
-      existingResource.providerId !==
-      req.provider.id
-    ) {
-      return res.status(403).json({
-        success: false,
-        message:
-          "You can only modify your own resources"
+        message: "Resource not found."
       });
     }
 
@@ -331,43 +326,79 @@ export const updateResource = async (req, res) => {
     const updateData = {};
 
     if (name !== undefined) {
+      if (!name?.trim()) {
+        return res.status(400).json({
+          success: false,
+          message: "Resource name cannot be empty."
+        });
+      }
+
       updateData.name = name.trim();
     }
 
     if (category !== undefined) {
+      if (!validCategories.includes(category)) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid resource category."
+        });
+      }
+
       updateData.category = category;
     }
 
+    /*
+     * Quantity is independently editable.
+     */
     if (quantity !== undefined) {
-      const parsedQuantity = Number(quantity);
+      const parsedQuantity = parseQuantity(quantity);
 
-      if (
-        !Number.isInteger(parsedQuantity) ||
-        parsedQuantity < 0
-      ) {
+      if (parsedQuantity === null) {
         return res.status(400).json({
           success: false,
-          message:
-            "Quantity must be a non-negative integer"
+          message: "Quantity must be a non-negative integer."
         });
       }
 
       updateData.quantity = parsedQuantity;
+
+      /*
+       * Zero quantity can never be available.
+       */
+      if (parsedQuantity === 0) {
+        updateData.available = false;
+      }
     }
 
+    /*
+     * Availability is independently controllable.
+     *
+     * If quantity was changed in this request, use the new quantity.
+     * Otherwise use the existing quantity.
+     */
     if (available !== undefined) {
-      updateData.available = Boolean(
-        available
-      );
+      const effectiveQuantity =
+        updateData.quantity !== undefined
+          ? updateData.quantity
+          : existingResource.quantity;
+
+      updateData.available =
+        effectiveQuantity > 0 && available === true;
     }
 
     if (city !== undefined) {
+      if (!city?.trim()) {
+        return res.status(400).json({
+          success: false,
+          message: "City cannot be empty."
+        });
+      }
+
       updateData.city = city.trim();
     }
 
     if (address !== undefined) {
-      updateData.address =
-        address?.trim() || null;
+      updateData.address = address?.trim() || null;
     }
 
     if (description !== undefined) {
@@ -375,34 +406,40 @@ export const updateResource = async (req, res) => {
         description?.trim() || null;
     }
 
-    const updatedResource =
-      await prisma.resource.update({
-        where: {
-          id: resourceId
-        },
-        data: updateData
-      });
+    const updatedResource = await prisma.resource.update({
+      where: {
+        id: resourceId
+      },
+      data: updateData,
+      include: {
+        provider: {
+          select: {
+            id: true,
+            organization: true,
+            type: true,
+            city: true,
+            address: true,
+            phone: true,
+            verified: true
+          }
+        }
+      }
+    });
 
     return res.status(200).json({
       success: true,
-      message: "Resource updated successfully",
-      data: {
-        resource: updatedResource
-      }
+      message: "Resource updated successfully.",
+      data: updatedResource
     });
   } catch (error) {
-    console.error(
-      "Update resource error:",
-      error
-    );
+    console.error("Update resource error:", error);
 
     return res.status(500).json({
       success: false,
-      message: "Failed to update resource"
+      message: "Failed to update resource."
     });
   }
 };
-
 
 /*
 |--------------------------------------------------------------------------
@@ -412,37 +449,33 @@ export const updateResource = async (req, res) => {
 
 export const deleteResource = async (req, res) => {
   try {
-    const resourceId = Number(req.params.id);
+    const resourceId = parsePositiveId(req.params.id);
 
-    if (!Number.isInteger(resourceId)) {
+    if (!resourceId) {
       return res.status(400).json({
         success: false,
-        message: "Invalid resource ID"
+        message: "Invalid resource ID."
       });
     }
 
-    const existingResource =
-      await prisma.resource.findUnique({
-        where: {
-          id: resourceId
-        }
+    if (!req.provider) {
+      return res.status(403).json({
+        success: false,
+        message: "Verified provider authorization required."
       });
+    }
+
+    const existingResource = await prisma.resource.findFirst({
+      where: {
+        id: resourceId,
+        providerId: req.provider.id
+      }
+    });
 
     if (!existingResource) {
       return res.status(404).json({
         success: false,
-        message: "Resource not found"
-      });
-    }
-
-    if (
-      existingResource.providerId !==
-      req.provider.id
-    ) {
-      return res.status(403).json({
-        success: false,
-        message:
-          "You can only delete your own resources"
+        message: "Resource not found."
       });
     }
 
@@ -454,17 +487,14 @@ export const deleteResource = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "Resource deleted successfully"
+      message: "Resource deleted successfully."
     });
   } catch (error) {
-    console.error(
-      "Delete resource error:",
-      error
-    );
+    console.error("Delete resource error:", error);
 
     return res.status(500).json({
       success: false,
-      message: "Failed to delete resource"
+      message: "Failed to delete resource."
     });
   }
 };

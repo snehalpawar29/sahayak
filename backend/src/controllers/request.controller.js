@@ -1,4 +1,19 @@
-import { prisma } from "../config/prisma.js"
+import { prisma } from "../config/prisma.js";
+
+const validPriorities = [
+  "LOW",
+  "MEDIUM",
+  "HIGH",
+  "CRITICAL"
+];
+
+const validStatuses = [
+  "ACCEPTED",
+  "REJECTED",
+  "COMPLETED",
+  "CANCELLED"
+];
+
 export const createRequest = async (req, res) => {
   try {
     const {
@@ -13,6 +28,7 @@ export const createRequest = async (req, res) => {
 
     if (
       !Number.isInteger(parsedResourceId) ||
+      parsedResourceId <= 0 ||
       !Number.isInteger(parsedQuantity) ||
       parsedQuantity <= 0
     ) {
@@ -22,9 +38,22 @@ export const createRequest = async (req, res) => {
       });
     }
 
-    const resource = await prisma.resource.findUnique({
+    if (!validPriorities.includes(priority)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid request priority"
+      });
+    }
+
+    const resource = await prisma.resource.findFirst({
       where: {
-        id: parsedResourceId
+        id: parsedResourceId,
+        provider: {
+          verified: true
+        }
+      },
+      include: {
+        provider: true
       }
     });
 
@@ -47,7 +76,7 @@ export const createRequest = async (req, res) => {
         quantity: parsedQuantity,
         priority,
         message: message?.trim() || null,
-        userId: req.user.id,
+        userId: Number(req.user.id),
         resourceId: parsedResourceId
       },
       include: {
@@ -78,7 +107,7 @@ export const getMyRequests = async (req, res) => {
   try {
     const requests = await prisma.emergencyRequest.findMany({
       where: {
-        userId: req.user.id
+        userId: Number(req.user.id)
       },
       include: {
         resource: {
@@ -109,23 +138,17 @@ export const getMyRequests = async (req, res) => {
 
 export const getProviderRequests = async (req, res) => {
   try {
-    const provider = await prisma.provider.findUnique({
-      where: {
-        userId: req.user.id
-      }
-    });
-
-    if (!provider) {
-      return res.status(404).json({
+    if (!req.provider) {
+      return res.status(403).json({
         success: false,
-        message: "Provider profile not found"
+        message: "Verified provider profile required"
       });
     }
 
     const requests = await prisma.emergencyRequest.findMany({
       where: {
         resource: {
-          providerId: provider.id
+          providerId: req.provider.id
         }
       },
       include: {
@@ -164,12 +187,12 @@ export const updateRequestStatus = async (req, res) => {
     const requestId = Number(req.params.id);
     const { status } = req.body;
 
-    const validStatuses = [
-      "ACCEPTED",
-      "REJECTED",
-      "COMPLETED",
-      "CANCELLED"
-    ];
+    if (!Number.isInteger(requestId) || requestId <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid request ID"
+      });
+    }
 
     if (!validStatuses.includes(status)) {
       return res.status(400).json({
@@ -178,16 +201,10 @@ export const updateRequestStatus = async (req, res) => {
       });
     }
 
-    const provider = await prisma.provider.findUnique({
-      where: {
-        userId: req.user.id
-      }
-    });
-
-    if (!provider) {
-      return res.status(404).json({
+    if (!req.provider) {
+      return res.status(403).json({
         success: false,
-        message: "Provider profile not found"
+        message: "Verified provider profile required"
       });
     }
 
@@ -195,8 +212,11 @@ export const updateRequestStatus = async (req, res) => {
       where: {
         id: requestId,
         resource: {
-          providerId: provider.id
+          providerId: req.provider.id
         }
+      },
+      include: {
+        resource: true
       }
     });
 
@@ -207,15 +227,84 @@ export const updateRequestStatus = async (req, res) => {
       });
     }
 
-    const updatedRequest =
-      await prisma.emergencyRequest.update({
-        where: {
-          id: requestId
-        },
-        data: {
-          status
-        }
+    if (request.status !== "PENDING") {
+      return res.status(409).json({
+        success: false,
+        message: "Only pending requests can be updated"
       });
+    }
+
+    if (status === "ACCEPTED") {
+      const updatedRequest = await prisma.$transaction(async (tx) => {
+        const updatedResource = await tx.resource.updateMany({
+          where: {
+            id: request.resourceId,
+            available: true,
+            quantity: {
+              gte: request.quantity
+            }
+          },
+          data: {
+            quantity: {
+              decrement: request.quantity
+            }
+          }
+        });
+
+        if (updatedResource.count !== 1) {
+          throw new Error(
+            "INSUFFICIENT_RESOURCE_QUANTITY"
+          );
+        }
+
+        await tx.resource.update({
+          where: {
+            id: request.resourceId
+          },
+          data: {
+            available: true
+          }
+        });
+
+        return tx.emergencyRequest.update({
+          where: {
+            id: requestId
+          },
+          data: {
+            status: "ACCEPTED"
+          },
+          include: {
+            resource: true
+          }
+        });
+      });
+
+      if (updatedRequest.resource.quantity === 0) {
+        await prisma.resource.update({
+          where: {
+            id: updatedRequest.resource.id
+          },
+          data: {
+            available: false
+          }
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: "Request accepted and resource inventory updated",
+        data: updatedRequest
+      });
+    }
+
+    const updatedRequest = await prisma.emergencyRequest.update({
+      where: {
+        id: requestId
+      },
+      data: {
+        status
+      }
+    });
 
     return res.status(200).json({
       success: true,
@@ -223,6 +312,13 @@ export const updateRequestStatus = async (req, res) => {
       data: updatedRequest
     });
   } catch (error) {
+    if (error.message === "INSUFFICIENT_RESOURCE_QUANTITY") {
+      return res.status(409).json({
+        success: false,
+        message: "Insufficient resource quantity available"
+      });
+    }
+
     console.error("Request update error:", error);
 
     return res.status(500).json({
