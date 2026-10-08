@@ -1,5 +1,5 @@
 const API_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+  import.meta.env.VITE_API_URL ||  "/api";
 
 const request = async (endpoint, options = {}) => {
   const token = localStorage.getItem("sahayak_token");
