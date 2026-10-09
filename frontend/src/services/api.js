@@ -4,8 +4,9 @@ const API_URL =
 const request = async (endpoint, options = {}) => {
   const token = localStorage.getItem("sahayak_token");
 
+  const isFormData = typeof FormData !== "undefined" && options.body instanceof FormData;
   const headers = {
-    "Content-Type": "application/json",
+    ...(!isFormData ? { "Content-Type": "application/json" } : {}),
     ...(options.headers || {})
   };
 
@@ -63,8 +64,17 @@ const api = {
   createProvider: (data) =>
     request("/providers", {
       method: "POST",
-      body: JSON.stringify(data)
+      body: data instanceof FormData ? data : JSON.stringify(data)
     }),
+
+  resubmitProviderApplication: (data) =>
+    request("/providers/profile/resubmit", {
+      method: "PATCH",
+      body: data
+    }),
+
+  getProviderVerificationDocument: (id) =>
+    request(`/admin/providers/${id}/document`),
 
   // =========================
   // ADMIN
