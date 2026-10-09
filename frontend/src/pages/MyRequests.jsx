@@ -97,6 +97,13 @@ const MyRequests = () => {
                                         request.createdAt
                                     ).toLocaleString()}
                                 </p>
+
+                                {request.status === "REJECTED" && request.rejectionReason && (
+                                    <div className="alert error" role="status">
+                                        <strong>Provider's reason:</strong>{" "}
+                                        {request.rejectionReason}
+                                    </div>
+                                )}
                             </div>
 
                             <div className="request-status">

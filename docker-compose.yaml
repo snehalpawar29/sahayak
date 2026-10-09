@@ -30,6 +30,8 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN}
       FRONTEND_URL: ${FRONTEND_URL}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      S3_VERIFICATION_BUCKET: ${S3_VERIFICATION_BUCKET}
 
     ports:
       - "5000:5000"
