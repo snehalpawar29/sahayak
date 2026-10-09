@@ -354,13 +354,24 @@ const ProviderDashboard = () => {
         requestId,
         status
     ) => {
+        let rejectionReason;
+        if (status === "REJECTED") {
+            rejectionReason = window.prompt("Enter a reason for rejecting this emergency request (required, max 500 characters):");
+            if (rejectionReason === null) return;
+            rejectionReason = rejectionReason.trim();
+            if (!rejectionReason || rejectionReason.length > 500) {
+                setError("Enter a rejection reason between 1 and 500 characters.");
+                return;
+            }
+        }
         setError("");
         setSuccess("");
 
         try {
             await api.updateRequestStatus(
                 requestId,
-                status
+                status,
+                rejectionReason
             );
 
             setSuccess(
@@ -731,6 +742,118 @@ const ProviderDashboard = () => {
                                 </form>
                             </section>
 
+                            {/* REQUESTS */}
+                            <section className="dashboard-section">
+                                <div className="section-heading">
+                                    <span>
+                                        EMERGENCY REQUESTS
+                                    </span>
+
+                                    <h2>
+                                        Incoming requests
+                                    </h2>
+                                </div>
+
+                                {requests.length === 0 ? (
+                                    <div className="empty-state">
+                                        <div>📭</div>
+
+                                        <h3>
+                                            No incoming requests
+                                        </h3>
+                                    </div>
+                                ) : (
+                                    <div className="request-list">
+                                        {requests.map(
+                                            (request) => (
+                                                <article
+                                                    className="request-item"
+                                                    key={
+                                                        request.id
+                                                    }
+                                                >
+                                                    <div>
+                                                        <span className="category-badge">
+                                                            {
+                                                                request.priority
+                                                            }
+                                                        </span>
+
+                                                        <h3>
+                                                            {
+                                                                request
+                                                                    .resource
+                                                                    .name
+                                                            }
+                                                        </h3>
+
+                                                        <p>
+                                                            Requested by:{" "}
+                                                            {
+                                                                request.user
+                                                                    .name
+                                                            }
+                                                        </p>
+
+                                                        <p>
+                                                            Quantity:{" "}
+                                                            {
+                                                                request.quantity
+                                                            }
+                                                        </p>
+
+                                                        <p>
+                                                            Message:{" "}
+                                                            {request.message ||
+                                                                "No message"}
+                                                        </p>
+                                                    </div>
+
+                                                    <div className="request-actions">
+                                                        <span
+                                                            className={`status status-${request.status.toLowerCase()}`}
+                                                        >
+                                                            {
+                                                                request.status
+                                                            }
+                                                        </span>
+
+                                                        {request.status ===
+                                                            "PENDING" && (
+                                                            <>
+                                                                <button
+                                                                    className="btn btn-primary"
+                                                                    onClick={() =>
+                                                                        updateRequest(
+                                                                            request.id,
+                                                                            "ACCEPTED"
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    Accept
+                                                                </button>
+
+                                                                <button
+                                                                    className="btn btn-danger"
+                                                                    onClick={() =>
+                                                                        updateRequest(
+                                                                            request.id,
+                                                                            "REJECTED"
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    Reject
+                                                                </button>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                </article>
+                                            )
+                                        )}
+                                    </div>
+                                )}
+                            </section>
+
                             {/* RESOURCE MANAGEMENT */}
                             <section className="dashboard-section">
                                 <div className="section-heading">
@@ -846,6 +969,28 @@ const ProviderDashboard = () => {
 
                                                     <button
                                                         type="button"
+                                                        className="btn btn-danger btn-full"
+                                                        disabled={updatingResourceId === resource.id}
+                                                        onClick={async () => {
+                                                            if (!window.confirm(`Delete ${resource.name}? Existing emergency requests may prevent deletion.`)) return;
+                                                            setUpdatingResourceId(resource.id);
+                                                            setError("");
+                                                            try {
+                                                                await api.deleteResource(resource.id);
+                                                                setSuccess(`${resource.name} deleted.`);
+                                                                await loadDashboard();
+                                                            } catch (err) {
+                                                                setError(err.message || "Failed to delete resource.");
+                                                            } finally {
+                                                                setUpdatingResourceId(null);
+                                                            }
+                                                        }}
+                                                    >
+                                                        Delete Resource
+                                                    </button>
+
+                                                    <button
+                                                        type="button"
                                                         className="btn btn-outline btn-full"
                                                         disabled={
                                                             updatingResourceId ===
@@ -882,117 +1027,7 @@ const ProviderDashboard = () => {
                                 )}
                             </section>
 
-                            {/* REQUESTS */}
-                            <section className="dashboard-section">
-                                <div className="section-heading">
-                                    <span>
-                                        EMERGENCY REQUESTS
-                                    </span>
 
-                                    <h2>
-                                        Incoming requests
-                                    </h2>
-                                </div>
-
-                                {requests.length === 0 ? (
-                                    <div className="empty-state">
-                                        <div>📭</div>
-
-                                        <h3>
-                                            No incoming requests
-                                        </h3>
-                                    </div>
-                                ) : (
-                                    <div className="request-list">
-                                        {requests.map(
-                                            (request) => (
-                                                <article
-                                                    className="request-item"
-                                                    key={
-                                                        request.id
-                                                    }
-                                                >
-                                                    <div>
-                                                        <span className="category-badge">
-                                                            {
-                                                                request.priority
-                                                            }
-                                                        </span>
-
-                                                        <h3>
-                                                            {
-                                                                request
-                                                                    .resource
-                                                                    .name
-                                                            }
-                                                        </h3>
-
-                                                        <p>
-                                                            Requested by:{" "}
-                                                            {
-                                                                request.user
-                                                                    .name
-                                                            }
-                                                        </p>
-
-                                                        <p>
-                                                            Quantity:{" "}
-                                                            {
-                                                                request.quantity
-                                                            }
-                                                        </p>
-
-                                                        <p>
-                                                            Message:{" "}
-                                                            {request.message ||
-                                                                "No message"}
-                                                        </p>
-                                                    </div>
-
-                                                    <div className="request-actions">
-                                                        <span
-                                                            className={`status status-${request.status.toLowerCase()}`}
-                                                        >
-                                                            {
-                                                                request.status
-                                                            }
-                                                        </span>
-
-                                                        {request.status ===
-                                                            "PENDING" && (
-                                                            <>
-                                                                <button
-                                                                    className="btn btn-primary"
-                                                                    onClick={() =>
-                                                                        updateRequest(
-                                                                            request.id,
-                                                                            "ACCEPTED"
-                                                                        )
-                                                                    }
-                                                                >
-                                                                    Accept
-                                                                </button>
-
-                                                                <button
-                                                                    className="btn btn-danger"
-                                                                    onClick={() =>
-                                                                        updateRequest(
-                                                                            request.id,
-                                                                            "REJECTED"
-                                                                        )
-                                                                    }
-                                                                >
-                                                                    Reject
-                                                                </button>
-                                                            </>
-                                                        )}
-                                                    </div>
-                                                </article>
-                                            )
-                                        )}
-                                    </div>
-                                )}
-                            </section>
                         </>
                     )}
                 </>
