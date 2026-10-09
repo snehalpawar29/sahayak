@@ -67,6 +67,11 @@ model Provider {
   verified     Boolean        @default(false) // Kept for backwards compatibility with existing code/data.
   status       ProviderStatus @default(PENDING)
   rejectionReason String?
+  verificationDocumentKey String?
+  verificationDocumentName String?
+  verificationDocumentType String?
+  submittedAt DateTime?
+  reviewedAt DateTime?
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 
