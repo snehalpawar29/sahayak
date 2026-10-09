@@ -13,4 +13,19 @@ const upload = multer({
   }
 });
 
+export const verifyUploadedDocument = (req, res, next) => {
+  if (!req.file) {
+    return res.status(400).json({ success: false, message: "A supporting document is required." });
+  }
+  const b = req.file.buffer;
+  const isPdf = b.subarray(0, 5).toString("ascii") === "%PDF-";
+  const isPng = b.length >= 8 && b.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
+  const isJpeg = b.length >= 3 && b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff;
+  if (!isPdf && !isPng && !isJpeg) {
+    return res.status(400).json({ success: false, message: "The file content does not match a valid PDF, JPG or PNG document." });
+  }
+  req.file.mimetype = isPdf ? "application/pdf" : isPng ? "image/png" : "image/jpeg";
+  next();
+};
+
 export default upload;
