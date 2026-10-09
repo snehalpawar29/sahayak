@@ -73,6 +73,12 @@ const api = {
   getPendingProviders: () =>
     request("/admin/providers/pending"),
 
+  getAllProviders: () =>
+    request("/admin/providers"),
+
+  getAllEmergencyRequests: () =>
+    request("/admin/requests"),
+
   getProviderById: (id) =>
     request(`/admin/providers/${id}`),
 
@@ -81,9 +87,10 @@ const api = {
       method: "PATCH"
     }),
 
-  rejectProvider: (id) =>
+  rejectProvider: (id, reason) =>
     request(`/admin/providers/${id}/reject`, {
-      method: "DELETE"
+      method: "PATCH",
+      body: JSON.stringify({ reason })
     }),
 
   // =========================
@@ -129,10 +136,10 @@ const api = {
   getProviderRequests: () =>
     request("/requests/provider"),
 
-  updateRequestStatus: (id, status) =>
+  updateRequestStatus: (id, status, rejectionReason) =>
     request(`/requests/${id}/status`, {
       method: "PATCH",
-      body: JSON.stringify({ status })
+      body: JSON.stringify({ status, ...(rejectionReason ? { rejectionReason } : {}) })
     })
 };
 
