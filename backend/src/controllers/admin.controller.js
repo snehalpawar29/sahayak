@@ -1,4 +1,5 @@
 import { prisma } from "../config/prisma.js";
+import { createVerificationDocumentUrl } from "../services/verificationStorage.js";
 
 const providerInclude = {
   user: {
@@ -116,7 +117,7 @@ export const approveProvider = async (req, res) => {
 
     const updatedProvider = await prisma.provider.update({
       where: { id: providerId },
-      data: { status: "APPROVED", verified: true, rejectionReason: null },
+      data: { status: "APPROVED", verified: true, rejectionReason: null, reviewedAt: new Date() },
       include: { user: { select: { id: true, name: true, email: true, role: true } } }
     });
     return res.status(200).json({ success: true, message: "Provider approved successfully", provider: updatedProvider });
@@ -145,11 +146,33 @@ export const rejectProvider = async (req, res) => {
 
     const updatedProvider = await prisma.provider.update({
       where: { id: providerId },
-      data: { status: "REJECTED", verified: false, rejectionReason: reason }
+      data: { status: "REJECTED", verified: false, rejectionReason: reason, reviewedAt: new Date() }
     });
     return res.status(200).json({ success: true, message: "Provider application rejected with reason", provider: updatedProvider });
   } catch (error) {
     console.error("Reject provider error:", error);
     return res.status(500).json({ success: false, message: "Failed to reject provider" });
+  }
+};
+
+export const getProviderVerificationDocument = async (req, res) => {
+  try {
+    const providerId = Number(req.params.id);
+    if (!Number.isInteger(providerId) || providerId <= 0) {
+      return res.status(400).json({ success: false, message: "Invalid provider ID" });
+    }
+    const provider = await prisma.provider.findUnique({
+      where: { id: providerId },
+      select: { id: true, verificationDocumentKey: true, verificationDocumentName: true }
+    });
+    if (!provider) return res.status(404).json({ success: false, message: "Provider not found" });
+    if (!provider.verificationDocumentKey) {
+      return res.status(404).json({ success: false, message: "No verification document has been submitted" });
+    }
+    const url = await createVerificationDocumentUrl(provider.verificationDocumentKey);
+    return res.status(200).json({ success: true, url, expiresInSeconds: 120, filename: provider.verificationDocumentName });
+  } catch (error) {
+    console.error("Get provider verification document error:", error);
+    return res.status(500).json({ success: false, message: "Unable to create secure document link" });
   }
 };
