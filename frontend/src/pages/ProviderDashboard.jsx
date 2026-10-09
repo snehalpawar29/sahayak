@@ -76,6 +76,7 @@ const ProviderDashboard = () => {
     const { user } = useAuth();
 
     const [provider, setProvider] = useState(null);
+    const [verificationDocument, setVerificationDocument] = useState(null);
     const [resources, setResources] = useState([]);
     const [requests, setRequests] = useState([]);
 
@@ -120,6 +121,13 @@ const ProviderDashboard = () => {
             setProvider(currentProvider);
 
             if (currentProvider) {
+                setProviderForm({
+                    organization: currentProvider.organization || "",
+                    type: currentProvider.type || "",
+                    city: currentProvider.city || "",
+                    address: currentProvider.address || "",
+                    phone: currentProvider.phone || ""
+                });
                 const currentResources =
                     currentProvider.resources || [];
 
@@ -209,7 +217,15 @@ const ProviderDashboard = () => {
         setSuccess("");
 
         try {
-            await api.createProvider(providerForm);
+            if (!verificationDocument) {
+                setError("Please attach a supporting document (PDF, JPG or PNG, max 5 MB).");
+                setSubmitting(false);
+                return;
+            }
+            const formData = new FormData();
+            Object.entries(providerForm).forEach(([key, value]) => formData.append(key, value));
+            formData.append("document", verificationDocument);
+            await api.createProvider(formData);
 
             setSuccess(
                 "Provider profile created. Waiting for administrator verification."
@@ -218,6 +234,31 @@ const ProviderDashboard = () => {
             await loadDashboard();
         } catch (error) {
             setError(error.message);
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+
+    const resubmitApplication = async (event) => {
+        event.preventDefault();
+        if (!verificationDocument) {
+            setError("Please attach the corrected supporting document (PDF, JPG or PNG, max 5 MB).");
+            return;
+        }
+        setSubmitting(true);
+        setError("");
+        setSuccess("");
+        try {
+            const formData = new FormData();
+            Object.entries(providerForm).forEach(([key, value]) => formData.append(key, value));
+            formData.append("document", verificationDocument);
+            await api.resubmitProviderApplication(formData);
+            setVerificationDocument(null);
+            setSuccess("Your corrected application has been resubmitted and is pending administrator review.");
+            await loadDashboard();
+        } catch (err) {
+            setError(err.message || "Unable to resubmit application.");
         } finally {
             setSubmitting(false);
         }
@@ -495,6 +536,17 @@ const ProviderDashboard = () => {
                             />
                         </label>
 
+
+                        <label className="full-width">
+                            Supporting verification document (PDF, JPG or PNG; maximum 5 MB)
+                            <input
+                                type="file"
+                                name="document"
+                                accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+                                required
+                                onChange={(event) => setVerificationDocument(event.target.files?.[0] || null)}
+                            />
+                        </label>
                         <button
                             className="btn btn-primary"
                             disabled={submitting}
@@ -551,7 +603,28 @@ const ProviderDashboard = () => {
                                 <>
                                     <strong>Provider application rejected.</strong>{" "}
                                     {provider.rejectionReason || "Please contact the administrator for details."}
-                                    <p>You can update your provider details and contact the administrator to request another review.</p>
+                                    <p>Correct the details below, attach the right registration document, and resubmit. Your existing profile and history will be preserved.</p>
+                                    <form className="form-grid" onSubmit={resubmitApplication}>
+                                        <label>Organization
+                                            <input name="organization" value={providerForm.organization} onChange={handleProviderChange} required maxLength={160} />
+                                        </label>
+                                        <label>Provider type
+                                            <input name="type" value={providerForm.type} onChange={handleProviderChange} required maxLength={100} placeholder="Hospital / NGO / Blood Bank" />
+                                        </label>
+                                        <label>City
+                                            <input name="city" value={providerForm.city} onChange={handleProviderChange} required maxLength={100} />
+                                        </label>
+                                        <label>Phone
+                                            <input name="phone" value={providerForm.phone} onChange={handleProviderChange} maxLength={40} />
+                                        </label>
+                                        <label className="full-width">Address
+                                            <input name="address" value={providerForm.address} onChange={handleProviderChange} maxLength={300} />
+                                        </label>
+                                        <label className="full-width">New supporting document (PDF, JPG or PNG; maximum 5 MB)
+                                            <input type="file" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" required onChange={(event) => setVerificationDocument(event.target.files?.[0] || null)} />
+                                        </label>
+                                        <button className="btn btn-primary" disabled={submitting}>{submitting ? "Resubmitting..." : "Edit & Resubmit Application"}</button>
+                                    </form>
                                 </>
                             ) : (
                                 "Your provider account is awaiting verification. Resource management will become available after administrator approval."
