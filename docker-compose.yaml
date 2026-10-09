@@ -37,7 +37,10 @@ services:
       - "5000:5000"
     
     depends_on:
-      - postgres
+      postgres:
+        condition: service_started
+      s3-init:
+        condition: service_completed_successfully
 
     networks:
       - sahayak-network 
@@ -59,6 +62,17 @@ services:
 
     networks:
       - sahayak-network
+  
+  s3-init:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: sahayak-s3-init
+    restart: "no"
+    command: ["node", "src/scripts/ensureVerificationBucket.js"]
+    environment:
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      S3_VERIFICATION_BUCKET: ${S3_VERIFICATION_BUCKET}
 
 
 volumes:
