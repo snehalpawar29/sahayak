@@ -156,6 +156,18 @@ app.use(
     );
 
     if (
+      error?.code === "LIMIT_FILE_SIZE" ||
+      error?.message?.startsWith("Upload a PDF")
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: error.code === "LIMIT_FILE_SIZE"
+          ? "The verification document must be 5 MB or smaller."
+          : error.message
+      });
+    }
+
+    if (
       error?.message ===
       "CORS origin not allowed"
     ) {
