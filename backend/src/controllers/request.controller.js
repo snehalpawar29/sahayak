@@ -49,7 +49,8 @@ export const createRequest = async (req, res) => {
       where: {
         id: parsedResourceId,
         provider: {
-          verified: true
+          verified: true,
+          status: "APPROVED"
         }
       },
       include: {
@@ -186,6 +187,10 @@ export const updateRequestStatus = async (req, res) => {
   try {
     const requestId = Number(req.params.id);
     const { status } = req.body;
+    const rejectionReason =
+      typeof req.body?.rejectionReason === "string"
+        ? req.body.rejectionReason.trim()
+        : "";
 
     if (!Number.isInteger(requestId) || requestId <= 0) {
       return res.status(400).json({
@@ -198,6 +203,13 @@ export const updateRequestStatus = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: "Invalid request status"
+      });
+    }
+
+    if (status === "REJECTED" && (!rejectionReason || rejectionReason.length > 500)) {
+      return res.status(400).json({
+        success: false,
+        message: "A rejection reason of 1–500 characters is required"
       });
     }
 
@@ -302,7 +314,12 @@ export const updateRequestStatus = async (req, res) => {
         id: requestId
       },
       data: {
-        status
+        status,
+        rejectionReason: status === "REJECTED" ? rejectionReason : null
+      },
+      include: {
+        resource: true,
+        user: { select: { id: true, name: true, email: true, city: true } }
       }
     });
 
