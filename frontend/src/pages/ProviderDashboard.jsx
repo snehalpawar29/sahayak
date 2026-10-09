@@ -528,9 +528,11 @@ const ProviderDashboard = () => {
                             <span>Verification</span>
 
                             <strong>
-                                {provider.verified
-                                    ? "✓ Verified"
-                                    : "⏳ Pending"}
+                                {(provider.status === "APPROVED" || provider.verified)
+                                    ? "✓ Approved"
+                                    : provider.status === "REJECTED"
+                                        ? "✕ Rejected"
+                                        : "⏳ Pending"}
                             </strong>
                         </div>
 
@@ -544,10 +546,16 @@ const ProviderDashboard = () => {
                     </section>
 
                     {!provider.verified && (
-                        <div className="alert warning">
-                            Your provider account is awaiting
-                            verification. Resource management will
-                            become available after verification.
+                        <div className={provider.status === "REJECTED" ? "alert error" : "alert warning"}>
+                            {provider.status === "REJECTED" ? (
+                                <>
+                                    <strong>Provider application rejected.</strong>{" "}
+                                    {provider.rejectionReason || "Please contact the administrator for details."}
+                                    <p>You can update your provider details and contact the administrator to request another review.</p>
+                                </>
+                            ) : (
+                                "Your provider account is awaiting verification. Resource management will become available after administrator approval."
+                            )}
                         </div>
                     )}
 
