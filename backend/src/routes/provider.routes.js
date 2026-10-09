@@ -10,7 +10,7 @@ import {
 
 import authMiddleware from "../middleware/auth.middleware.js";
 import roleMiddleware from "../middleware/role.middleware.js";
-import verificationUpload from "../middleware/verificationUpload.middleware.js";
+import verificationUpload, { verifyUploadedDocument } from "../middleware/verificationUpload.middleware.js";
 
 const router = express.Router();
 
@@ -36,6 +36,7 @@ router.post(
   authMiddleware,
   roleMiddleware("PROVIDER"),
   verificationUpload.single("document"),
+  verifyUploadedDocument,
   createProvider
 );
 
@@ -52,6 +53,7 @@ router.patch(
   authMiddleware,
   roleMiddleware("PROVIDER"),
   verificationUpload.single("document"),
+  verifyUploadedDocument,
   resubmitProviderApplication
 );
 
