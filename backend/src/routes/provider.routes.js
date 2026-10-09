@@ -4,11 +4,13 @@ import {
   createProvider,
   getProviderProfile,
   getProviderDashboard,
-  getProviders
+  getProviders,
+  resubmitProviderApplication
 } from "../controllers/provider.controller.js";
 
 import authMiddleware from "../middleware/auth.middleware.js";
 import roleMiddleware from "../middleware/role.middleware.js";
+import verificationUpload from "../middleware/verificationUpload.middleware.js";
 
 const router = express.Router();
 
@@ -33,6 +35,7 @@ router.post(
   "/",
   authMiddleware,
   roleMiddleware("PROVIDER"),
+  verificationUpload.single("document"),
   createProvider
 );
 
@@ -40,7 +43,16 @@ router.post(
   "/profile",
   authMiddleware,
   roleMiddleware("PROVIDER"),
+  verificationUpload.single("document"),
   createProvider
+);
+
+router.patch(
+  "/profile/resubmit",
+  authMiddleware,
+  roleMiddleware("PROVIDER"),
+  verificationUpload.single("document"),
+  resubmitProviderApplication
 );
 
 router.get(
