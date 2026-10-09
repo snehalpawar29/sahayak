@@ -37,6 +37,12 @@ enum RequestStatus {
   CANCELLED
 }
 
+enum ProviderStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 model User {
   id                Int                @id @default(autoincrement())
   name              String
@@ -58,7 +64,9 @@ model Provider {
   city         String
   address      String?
   phone        String?
-  verified     Boolean    @default(false)
+  verified     Boolean        @default(false) // Kept for backwards compatibility with existing code/data.
+  status       ProviderStatus @default(PENDING)
+  rejectionReason String?
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 
@@ -92,6 +100,7 @@ model EmergencyRequest {
   priority    RequestPriority @default(MEDIUM)
   status      RequestStatus   @default(PENDING)
   message     String?
+  rejectionReason String?
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
 
