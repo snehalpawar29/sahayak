@@ -88,6 +88,18 @@ export default function AdminDashboard() {
     }
   };
 
+
+  const openVerificationDocument = async (provider) => {
+    setError("");
+    try {
+      const result = await api.getProviderVerificationDocument(provider.id);
+      if (!result.url) throw new Error("Document link was not returned.");
+      window.open(result.url, "_blank", "noopener,noreferrer");
+    } catch (err) {
+      setError(err.message || "Unable to open verification document.");
+    }
+  };
+
   const logout = () => {
     localStorage.removeItem("sahayak_token");
     localStorage.removeItem("sahayak_user");
@@ -147,7 +159,7 @@ export default function AdminDashboard() {
                       <td>{p.city}{p.address ? <><br />{p.address}</> : null}</td>
                       <td><span className={status === "APPROVED" ? "pending-badge" : status === "REJECTED" ? "reject-button" : "type-badge"}>{label(status)}</span>{p.rejectionReason && <p style={{ maxWidth: 220, whiteSpace: "normal" }}>Reason: {p.rejectionReason}</p>}</td>
                       <td>{(p.resources || []).length === 0 ? "No resources" : <div>{p.resources.map((r) => <div key={r.id} style={{ marginBottom: 8 }}><strong>{r.name}</strong><br /><small>{label(r.category)} · Qty {r.quantity} · {r.available ? "Available" : "Unavailable"}</small><br /><small>Updated: {dateTime(r.updatedAt)}</small></div>)}</div>}</td>
-                      <td>{status === "PENDING" ? <div className="provider-actions"><button className="approve-button" disabled={actionLoading === p.id} onClick={() => approve(p)}>Approve</button><button className="reject-button" disabled={actionLoading === p.id} onClick={() => reject(p)}>Reject</button></div> : <span>—</span>}</td>
+                      <td><div className="provider-actions">{p.verificationDocumentName && <button className="admin-refresh-button" onClick={() => openVerificationDocument(p)}>View document</button>}{status === "PENDING" && <><button className="approve-button" disabled={actionLoading === p.id} onClick={() => approve(p)}>Approve</button><button className="reject-button" disabled={actionLoading === p.id} onClick={() => reject(p)}>Reject</button></>}</div></td>
                     </tr>;
                   })}</tbody>
                 </table>
