@@ -1,4 +1,5 @@
 import { prisma } from "../config/prisma.js";
+import { uploadVerificationDocument } from "../services/verificationStorage.js";
 
 export const createProvider = async (req, res) => {
   try {
@@ -25,6 +26,10 @@ export const createProvider = async (req, res) => {
       address,
       phone
     } = req.body;
+
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: "A supporting verification document is required (PDF, JPG or PNG; maximum 5 MB)." });
+    }
 
     if (
       !organization?.trim() ||
@@ -73,6 +78,8 @@ export const createProvider = async (req, res) => {
       });
     }
 
+    const documentKey = await uploadVerificationDocument(req.file, userId);
+
     const provider = await prisma.provider.create({
       data: {
         organization: organization.trim(),
@@ -83,6 +90,11 @@ export const createProvider = async (req, res) => {
         verified: false,
         status: "PENDING",
         rejectionReason: null,
+        verificationDocumentKey: documentKey,
+        verificationDocumentName: req.file.originalname.slice(0, 200),
+        verificationDocumentType: req.file.mimetype,
+        submittedAt: new Date(),
+        reviewedAt: null,
         userId
       }
     });
@@ -268,5 +280,49 @@ export const getProviders = async (req, res) => {
       success: false,
       message: "Failed to fetch providers"
     });
+  }
+};
+
+export const resubmitProviderApplication = async (req, res) => {
+  try {
+    const userId = Number(req.user?.id);
+    if (!Number.isInteger(userId) || userId <= 0) {
+      return res.status(401).json({ success: false, message: "Authentication required" });
+    }
+    const { organization, type, city, address, phone } = req.body;
+    if (!organization?.trim() || !type?.trim() || !city?.trim()) {
+      return res.status(400).json({ success: false, message: "Organization, type and city are required" });
+    }
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: "Upload a corrected supporting document (PDF, JPG or PNG; maximum 5 MB)." });
+    }
+    const existing = await prisma.provider.findUnique({ where: { userId } });
+    if (!existing) return res.status(404).json({ success: false, message: "Provider profile not found. Create an application first." });
+    if (existing.status !== "REJECTED") {
+      return res.status(409).json({ success: false, message: "Only rejected applications can be resubmitted." });
+    }
+    const uploadedKey = await uploadVerificationDocument(req.file, userId);
+    const updated = await prisma.provider.update({
+      where: { id: existing.id },
+      data: {
+        organization: organization.trim(),
+        type: type.trim(),
+        city: city.trim(),
+        address: address?.trim() || null,
+        phone: phone?.trim() || null,
+        verificationDocumentKey: uploadedKey,
+        verificationDocumentName: req.file.originalname.slice(0, 200),
+        verificationDocumentType: req.file.mimetype,
+        status: "PENDING",
+        verified: false,
+        rejectionReason: null,
+        submittedAt: new Date(),
+        reviewedAt: null
+      }
+    });
+    return res.status(200).json({ success: true, message: "Application resubmitted for administrator review.", data: { provider: updated } });
+  } catch (error) {
+    console.error("Resubmit provider application error:", error);
+    return res.status(500).json({ success: false, message: "Failed to resubmit provider application" });
   }
 };
