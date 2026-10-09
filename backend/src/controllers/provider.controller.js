@@ -81,6 +81,8 @@ export const createProvider = async (req, res) => {
         address: address?.trim() || null,
         phone: phone?.trim() || null,
         verified: false,
+        status: "PENDING",
+        rejectionReason: null,
         userId
       }
     });
@@ -229,7 +231,8 @@ export const getProviders = async (req, res) => {
   try {
     const providers = await prisma.provider.findMany({
       where: {
-        verified: true
+        verified: true,
+        status: "APPROVED"
       },
       include: {
         user: {
