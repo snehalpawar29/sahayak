@@ -114,6 +114,9 @@ export const approveProvider = async (req, res) => {
     if (provider.status === "APPROVED" || provider.verified) {
       return res.status(409).json({ success: false, message: "Provider is already approved" });
     }
+    if (!provider.verificationDocumentKey) {
+      return res.status(409).json({ success: false, message: "This application has no supporting document. Ask the provider to submit or resubmit one before approval." });
+    }
 
     const updatedProvider = await prisma.provider.update({
       where: { id: providerId },
