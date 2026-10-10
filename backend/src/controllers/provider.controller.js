@@ -1,7 +1,12 @@
 import { prisma } from "../config/prisma.js";
-import { uploadVerificationDocument } from "../services/verificationStorage.js";
+import {
+  uploadVerificationDocument,
+  deleteVerificationDocument
+} from "../services/verificationStorage.js";
 
 export const createProvider = async (req, res) => {
+  let uploadedDocumentKey = null;
+
   try {
     if (!req.user) {
       return res.status(401).json({
@@ -78,7 +83,7 @@ export const createProvider = async (req, res) => {
       });
     }
 
-    const documentKey = await uploadVerificationDocument(req.file, userId);
+    uploadedDocumentKey = await uploadVerificationDocument(req.file, userId);
 
     const provider = await prisma.provider.create({
       data: {
@@ -90,7 +95,7 @@ export const createProvider = async (req, res) => {
         verified: false,
         status: "PENDING",
         rejectionReason: null,
-        verificationDocumentKey: documentKey,
+        verificationDocumentKey: uploadedDocumentKey,
         verificationDocumentName: req.file.originalname.slice(0, 200),
         verificationDocumentType: req.file.mimetype,
         submittedAt: new Date(),
@@ -98,6 +103,8 @@ export const createProvider = async (req, res) => {
         userId
       }
     });
+
+    uploadedDocumentKey = null; // DB record now references this document.
 
     return res.status(201).json({
       success: true,
@@ -109,6 +116,14 @@ export const createProvider = async (req, res) => {
     });
   } catch (error) {
     console.error("Create provider error:", error);
+
+    if (uploadedDocumentKey) {
+      try {
+        await deleteVerificationDocument(uploadedDocumentKey);
+      } catch (cleanupError) {
+        console.error("Failed to clean up provider document:", cleanupError.message);
+      }
+    }
 
     return res.status(500).json({
       success: false,
@@ -284,6 +299,8 @@ export const getProviders = async (req, res) => {
 };
 
 export const resubmitProviderApplication = async (req, res) => {
+  let uploadedDocumentKey = null;
+
   try {
     const userId = Number(req.user?.id);
     if (!Number.isInteger(userId) || userId <= 0) {
@@ -301,7 +318,7 @@ export const resubmitProviderApplication = async (req, res) => {
     if (existing.status !== "REJECTED") {
       return res.status(409).json({ success: false, message: "Only rejected applications can be resubmitted." });
     }
-    const uploadedKey = await uploadVerificationDocument(req.file, userId);
+    uploadedDocumentKey = await uploadVerificationDocument(req.file, userId);
     const updated = await prisma.provider.update({
       where: { id: existing.id },
       data: {
@@ -310,7 +327,7 @@ export const resubmitProviderApplication = async (req, res) => {
         city: city.trim(),
         address: address?.trim() || null,
         phone: phone?.trim() || null,
-        verificationDocumentKey: uploadedKey,
+        verificationDocumentKey: uploadedDocumentKey,
         verificationDocumentName: req.file.originalname.slice(0, 200),
         verificationDocumentType: req.file.mimetype,
         status: "PENDING",
@@ -320,9 +337,19 @@ export const resubmitProviderApplication = async (req, res) => {
         reviewedAt: null
       }
     });
+    uploadedDocumentKey = null; // Keep the new document after DB update succeeds.
     return res.status(200).json({ success: true, message: "Application resubmitted for administrator review.", data: { provider: updated } });
   } catch (error) {
     console.error("Resubmit provider application error:", error);
+
+    if (uploadedDocumentKey) {
+      try {
+        await deleteVerificationDocument(uploadedDocumentKey);
+      } catch (cleanupError) {
+        console.error("Failed to clean up resubmitted document:", cleanupError.message);
+      }
+    }
+
     return res.status(500).json({ success: false, message: "Failed to resubmit provider application" });
   }
 };
