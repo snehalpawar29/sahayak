@@ -16,7 +16,7 @@ jobs:
     defaults:
       run:
         working-directory: frontend
-    
+
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
@@ -27,14 +27,14 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: frontend/package.json
-      
+
       - name: Install dependencies
         run: npm ci
 
       - name: Run ESLint
         run: npm run lint
-      
-      - name: Build Frontned
+
+      - name: Build Frontend
         run: npm run build
 
   backend:
@@ -54,34 +54,36 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: backend/package.json
-      
+
       - name: Install Dependencies
         run: npm ci
-      
-      - name: Check Javascript Syntax
+
+      - name: Check JavaScript Syntax
         shell: bash
         run: |
           set -e
           while IFS= read -r -d '' file; do
             node --check "$file"
           done < <(find src -type f -name '*.js' -print0)
-      
-      - name: Validate Prisma Schemd
+
+      - name: Validate Prisma Schema
         run: npx prisma validate
-        env: 
-            DATABASE_URL: postgresql://ci:ci@localhost:5432/sahayak_ci
+        env:
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/sahayak_ci
 
   compose:
     name: Docker Compose Validation
     runs-on: ubuntu-latest
 
-    steps: 
+    steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
 
-      - name: Validate Compose configuration
-        run: docker compose config --quiet
+      - name: Validate Production Compose configuration
+        run: docker compose -f docker-compose.yaml config --quiet
 
-
-
-
+      - name: Validate Elastic Beanstalk Compose configuration
+        run: docker compose -f docker-compose.yml config --quiet
+        env:
+          POSTGRES_PASSWORD: validation-only-password
+          JWT_SECRET: validation-only-secret-for-config-check
