@@ -33,6 +33,8 @@ services:
       AWS_REGION: ${AWS_REGION:-us-east-1}
       S3_VERIFICATION_BUCKET: ${S3_VERIFICATION_BUCKET}
 
+    ports:
+      - "5000:5000"
     
     depends_on:
       postgres:
@@ -53,11 +55,6 @@ services:
 
     ports:
       - "80:80"
-      - "443:443"
-
-    volumes:
-      - /var/www/certbot:/var/www/certbot:ro
-      - /etc/letsencrypt:/etc/letsencrypt:ro
 
     depends_on:
       - postgres
