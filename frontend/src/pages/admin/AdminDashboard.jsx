@@ -52,7 +52,18 @@ export default function AdminDashboard() {
       navigate("/admin/login");
       return;
     }
-    loadDashboard();
+
+    let cancelled = false;
+
+    queueMicrotask(() => {
+      if (!cancelled) {
+        loadDashboard();
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [loadDashboard, navigate, user]);
 
   const approve = async (provider) => {

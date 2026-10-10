@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { useAuth } from "../context/AuthContext";
+import { useCallback, useEffect, useState } from "react";
+import { useAuth } from "../context/useAuth";
 import api from "../services/api";
 import Loading from "../components/Loading";
 
@@ -108,7 +108,7 @@ const ProviderDashboard = () => {
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
 
-    const loadDashboard = async () => {
+    const loadDashboard = useCallback(async () => {
         try {
             setError("");
 
@@ -167,13 +167,27 @@ const ProviderDashboard = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [resourceForm.city]);
 
     useEffect(() => {
-        if (user) {
-            loadDashboard();
+        if (!user) {
+            return;
         }
-    }, [user]);
+
+        let cancelled = false;
+
+        const run = async () => {
+            if (!cancelled) {
+                await loadDashboard();
+            }
+        };
+
+        queueMicrotask(run);
+
+        return () => {
+            cancelled = true;
+        };
+    }, [user, loadDashboard]);
 
     const handleProviderChange = (event) => {
         setProviderForm((current) => ({

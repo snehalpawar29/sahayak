@@ -1,23 +1,17 @@
-import {
-    createContext,
-    useContext,
-    useEffect,
-    useState
-} from "react";
+import { useEffect, useState } from "react";
 
 import api from "../services/api";
-
-const AuthContext = createContext(null);
+import { AuthContext } from "./auth-context";
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
-    const [loading, setLoading] = useState(true);
-
+    const [loading, setLoading] = useState(
+        () => Boolean(localStorage.getItem("sahayak_token"))
+    );
     useEffect(() => {
         const token = localStorage.getItem("sahayak_token");
 
         if (!token) {
-            setLoading(false);
             return;
         }
 
@@ -79,16 +73,4 @@ export const AuthProvider = ({ children }) => {
             {children}
         </AuthContext.Provider>
     );
-};
-
-export const useAuth = () => {
-    const context = useContext(AuthContext);
-
-    if (!context) {
-        throw new Error(
-            "useAuth must be used inside AuthProvider"
-        );
-    }
-
-    return context;
 };

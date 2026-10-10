@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import ResourceCard from "../components/ResourceCard";
 import Loading from "../components/Loading";
@@ -31,7 +31,7 @@ const Resources = () => {
     const [error, setError] =
         useState("");
 
-    const fetchResources = async () => {
+    const fetchResources = useCallback(async () => {
         setLoading(true);
         setError("");
 
@@ -81,11 +81,21 @@ const Resources = () => {
       } finally {
           setLoading(false);
       }
-  };
+    }, [category, city]);
 
     useEffect(() => {
-        fetchResources();
-    }, []);
+        let cancelled = false;
+
+        queueMicrotask(() => {
+            if (!cancelled) {
+                fetchResources();
+            }
+        });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [fetchResources]);
 
     const handleSubmit = (
         event
