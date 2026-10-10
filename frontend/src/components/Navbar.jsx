@@ -3,12 +3,12 @@ import { useAuth } from "../context/AuthContext";
 
 const Navbar = () => {
     const location = useLocation();
+    const { user, logout } = useAuth();
+    const navigate = useNavigate();
 
     if (location.pathname.startsWith("/admin")) {
         return null;
     }
-    const { user, logout } = useAuth();
-    const navigate = useNavigate();
 
     const handleLogout = () => {
         logout();
