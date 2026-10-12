@@ -1,0 +1,27 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: sahayak-postgres
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_USER: sahayak_user
+      POSTGRES_PASSWORD: sahayak_password
+      POSTGRES_DB: sahayak_DB
+
+    ports:
+      - "5432:5432"
+      
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    
+    networks:
+      - sahayak-network
+
+volumes:
+  postgres_data:
+
+networks:
+  sahayak-network:
+    name: sahayak-network
+    driver: bridge
