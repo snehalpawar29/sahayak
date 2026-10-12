@@ -6,50 +6,98 @@ datasource db {
   provider = "postgresql"
 }
 
-model User {
-  id        Int      @id @default(autoincrement())
-  name      String
-  email     String   @unique
-  password  String
-  role      String   @default("CITIZEN")
-  createdAt DateTime @default(now())
+enum UserRole {
+  CITIZEN
+  PROVIDER
+  ADMIN
+}
 
-  requests EmergencyRequest[]
+enum ResourceCategory {
+  BLOOD
+  HOSPITAL_BED
+  MEDICINE
+  AMBULANCE
+  SHELTER
+  FOOD
+  WATER
+}
+
+enum RequestPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum RequestStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  COMPLETED
+  CANCELLED
+}
+
+model User {
+  id                Int                @id @default(autoincrement())
+  name              String
+  email             String             @unique
+  password          String
+  role              UserRole           @default(CITIZEN)
+  city              String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  provider          Provider?
+  emergencyRequests EmergencyRequest[]
 }
 
 model Provider {
-  id           Int      @id @default(autoincrement())
+  id         Int        @id @default(autoincrement())
   organization String
-  type         String
-  city         String
-  verified     Boolean  @default(false)
-  createdAt    DateTime @default(now())
+  type       String
+  city       String
+  address    String?
+  phone      String?
+  verified   Boolean    @default(false)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
 
-  resources Resource[]
+  userId     Int        @unique
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  resources  Resource[]
 }
 
 model Resource {
-  id           Int      @id @default(autoincrement())
+  id           Int              @id @default(autoincrement())
   name         String
-  category     String
-  quantity     Int
-  availability String
+  category     ResourceCategory
+  quantity     Int              @default(0)
+  available    Boolean          @default(false)
   city         String
-  updatedAt    DateTime @updatedAt
+  address      String?
+  description  String?
+  updatedAt    DateTime         @updatedAt
+  createdAt    DateTime         @default(now())
 
-  providerId Int
-  provider   Provider @relation(fields: [providerId], references: [id])
+  providerId   Int
+  provider     Provider         @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  emergencyRequests EmergencyRequest[]
 }
 
 model EmergencyRequest {
-  id         Int      @id @default(autoincrement())
-  quantity   Int
-  priority   String
-  status     String   @default("PENDING")
-  createdAt  DateTime @default(now())
+  id          Int            @id @default(autoincrement())
+  quantity    Int
+  priority    RequestPriority @default(MEDIUM)
+  status      RequestStatus   @default(PENDING)
+  message     String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
 
-  userId     Int
-  user       User @relation(fields: [userId], references: [id])
+  userId      Int
+  resourceId  Int
 
-  resourceId Int
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resource    Resource       @relation(fields: [resourceId], references: [id], onDelete: Cascade)
 }
