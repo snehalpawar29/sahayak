@@ -35,7 +35,7 @@ The project combines full-stack application development with containerization an
 ## 🏗️ System Architecture
 
 <p align="center">
-  <img src="docs/screenshots/sahayak-architecture.png" alt="Sahayak system architecture showing users, frontend, backend API, database, and deployment components" width="100%" />
+  <img src="docs/screenshots/Sahayak Emergency Resource Finder Architecture.png" alt="Sahayak system architecture showing users, frontend, backend API, database, and deployment components" width="100%" />
 </p>
 
 <p align="center">
