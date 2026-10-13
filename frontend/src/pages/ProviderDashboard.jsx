@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import api from "../services/api";
 import Loading from "../components/Loading";
+import "./ProviderDashboard.css";
 
 const categories = ["BLOOD", "HOSPITAL_BED", "MEDICINE", "AMBULANCE", "SHELTER", "FOOD", "WATER"];
 const emptyResource = { name: "", category: "BLOOD", quantity: 0, available: true, city: "", address: "", description: "" };
