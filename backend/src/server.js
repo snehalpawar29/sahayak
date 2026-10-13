@@ -11,6 +11,10 @@ import requestRoutes from "./routes/request.routes.js";
 
 const app = express();
 
+// Trust one reverse proxy, if your deployment has exactly
+// one trusted proxy between the client and this application.
+app.set("trust proxy", 1);
+
 const PORT = process.env.PORT || 5000;
 
 const limiter = rateLimit({

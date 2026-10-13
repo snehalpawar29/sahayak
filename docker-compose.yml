@@ -49,7 +49,6 @@ services:
       - "5173:80"
     depends_on:
       - backend
-      - postgres
 
 volumes:
   postgres_data:
