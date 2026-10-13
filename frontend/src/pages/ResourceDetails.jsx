@@ -29,7 +29,7 @@ const ResourceDetails = () => {
                 const response =
                     await api.getResource(id);
 
-                setResource(response.data);
+                setResource(response.data?.resource ?? response.data?.data?.resource ?? null);
             } catch (error) {
                 setError(error.message);
             } finally {

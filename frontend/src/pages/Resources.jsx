@@ -69,7 +69,8 @@ const Resources = () => {
         );
 
       setResources(
-        response.data?.resources ||
+        response.data?.data?.resources ??
+        response.data?.resources ??
         []
       );
     } catch (error) {
