@@ -11,6 +11,8 @@ COPY prisma.config.ts ./
 
 RUN npx prisma generate
 
+COPY certs/rds-global-bundle.pem /app/certs/rds-global-bundle.pem
+
 COPY src ./src
 
 ENV NODE_ENV=production
