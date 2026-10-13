@@ -16,3 +16,5 @@ coverage/
 .idea/
 
 postgres_data/
+
+sahayak-pre-rds.dump
