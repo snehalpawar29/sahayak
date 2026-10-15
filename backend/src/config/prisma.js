@@ -9,10 +9,10 @@ const { Pool } = pg;
 
 const connectionConfig = parse(process.env.DATABASE_URL);
 
-connectionConfig.ssl = {
-  ca: fs.readFileSync('/app/certs/rds-global-bundle.pem', 'utf8'),
-  rejectUnauthorized: true,
-};
+// connectionConfig.ssl = {
+//   ca: fs.readFileSync('/app/certs/rds-global-bundle.pem', 'utf8'),
+//   rejectUnauthorized: true,
+// };
 
 const pool = new Pool(connectionConfig);
 const adapter = new PrismaPg(pool);

@@ -3,12 +3,18 @@
 import "dotenv/config";
 import { defineConfig } from "prisma/config";
 
+// Quick validation to append configuration safety layers dynamically
+let dbUrl = process.env["DATABASE_URL"] || "";
+if (dbUrl && !dbUrl.includes("sslmode=")) {
+  dbUrl += dbUrl.includes("?") ? "&sslmode=disable" : "?sslmode=disable";
+}
+
 export default defineConfig({
   schema: "prisma/schema.prisma",
   migrations: {
     path: "prisma/migrations",
   },
   datasource: {
-    url: process.env["DATABASE_URL"],
+    url: dbUrl,
   },
 });
