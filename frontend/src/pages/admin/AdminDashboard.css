@@ -1113,12 +1113,11 @@
 
     .admin-dashboard .admin-stat-copy h3 {
         font-size: 24px;
-    
+    }
 
-
-        .admin-dashboard .admin-navigation {
-            grid-template-columns: minmax(0, 1fr);
-        }
+    .admin-dashboard .admin-navigation {
+        grid-template-columns: minmax(0, 1fr);
+    }
 
         .admin-dashboard .admin-nav-card {
             min-height: 120px;
