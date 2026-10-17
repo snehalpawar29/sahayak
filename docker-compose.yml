@@ -1,59 +1,90 @@
-services:
-  # postgres:
-  #   image: postgres:16
-  #   container_name: sahayak-postgres
-  #   restart: unless-stopped
+# services:
+#   # postgres:
+#   #   image: postgres:16
+#   #   container_name: sahayak-postgres
+#   #   restart: unless-stopped
 
-  #   environment:
-  #     POSTGRES_USER: sahayak_user
-  #     POSTGRES_PASSWORD: sahayak_password
-  #     POSTGRES_DB: sahayak_DB
+#   #   environment:
+#   #     POSTGRES_USER: sahayak_user
+#   #     POSTGRES_PASSWORD: sahayak_password
+#   #     POSTGRES_DB: sahayak_DB
 
-  #   ports:
-  #     - "5432:5432"
+#   #   ports:
+#   #     - "5432:5432"
       
-  #   volumes:
-  #     - postgres_data:/var/lib/postgresql/data
+#   #   volumes:
+#   #     - postgres_data:/var/lib/postgresql/data
     
-  #   networks:
-  #     - sahayak-network
+#   #   networks:
+#   #     - sahayak-network
 
+#   backend:
+#     build:
+#       context: ./backend
+#       dockerfile: Dockerfile
+#     container_name: sahayak-backend
+#     restart: unless-stopped
+#     environment:
+#       DATABASE_URL: ${DATABASE_URL}
+#       JWT_SECRET: ${JWT_SECRET}
+#       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+#       FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
+#       PORT: 5000
+#       NODE_ENV: production
+
+#     networks:
+#       - sahayak-network
+#     # depends_on:
+#     #   - postgres
+
+#   frontend:
+#     build:
+#       context: ./frontend
+#       dockerfile: Dockerfile
+#     container_name: sahayak-frontend
+#     restart: unless-stopped
+#     networks:
+#       - sahayak-network
+#     ports:
+#       - "80:80"
+#     depends_on:
+#       - backend
+
+# volumes:
+#   postgres_data:
+
+# networks:
+#   sahayak-network:
+#     name: sahayak-network
+#     driver: bridge
+
+
+services:
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: sahayak-backend
+    image: 033161567802.dkr.ecr.us-east-1.amazonaws.com/sahayak-backend:1ce9cd21ba462cd931027c9ad750d7d5f03e1b1f
     restart: unless-stopped
     environment:
       DATABASE_URL: ${DATABASE_URL}
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
-      FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
-      PORT: 5000
+      FRONTEND_URL: ${FRONTEND_URL}
+      PORT: "5000"
       NODE_ENV: production
-
+    expose:
+      - "5000"
     networks:
       - sahayak-network
-    # depends_on:
-    #   - postgres
 
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: sahayak-frontend
+    image: 033161567802.dkr.ecr.us-east-1.amazonaws.com/sahayak-frontend:1ce9cd21ba462cd931027c9ad750d7d5f03e1b1f
     restart: unless-stopped
-    networks:
-      - sahayak-network
     ports:
       - "80:80"
     depends_on:
       - backend
-
-volumes:
-  postgres_data:
+    networks:
+      - sahayak-network
 
 networks:
   sahayak-network:
-    name: sahayak-network
     driver: bridge
