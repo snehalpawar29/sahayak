@@ -103,20 +103,27 @@ jobs:
           tags: sahayak-frontend:ci
   
   
-  image-scan:
-    name: Scan Docker Images
+    image-scan:
+    name: Build and Scan Docker Images
     runs-on: ubuntu-latest
-    needs: docker-build
+    needs:
+      - frontend-checks
+      - backend-checks
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install Trivy CLI
-        uses: aquasecurity/setup-trivy@v0.2.6
-        with:
-          version: v0.65.0
+      # 1. Install Trivy directly using the official native repository method
+      - name: Install Trivy CLI natively
+        run: |
+          sudo apt-get install -y wget apt-transport-https gnupg lsb-release
+          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo gpg --dearmor -o /usr/share/keyrings/trivy.gpg
+          echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | sudo tee -a /etc/apt/sources.list.d/trivy.list
+          sudo apt-get update
+          sudo apt-get install -y trivy
 
+      # 2. Build local Docker images on this runner instance
       - name: Build frontend image
         run: |
           docker build \
@@ -129,6 +136,7 @@ jobs:
             -t sahayak-backend:ci \
             ./backend
 
+      # 3. Scan frontend image using the natively installed CLI
       - name: Scan frontend image
         uses: aquasecurity/trivy-action@v0.33.1
         with:
@@ -138,8 +146,9 @@ jobs:
           severity: CRITICAL,HIGH
           exit-code: '1'
           ignore-unfixed: true
-          skip-setup-trivy: true
+          skip-setup-trivy: true # Tells the action to look at the system binary we just installed
 
+      # 4. Scan backend image using the natively installed CLI
       - name: Scan backend image
         uses: aquasecurity/trivy-action@v0.33.1
         with:
@@ -149,5 +158,4 @@ jobs:
           severity: CRITICAL,HIGH
           exit-code: '1'
           ignore-unfixed: true
-          skip-setup-trivy: true 
-
+          skip-setup-trivy: true # Tells the action to look at the system binary we just installed
