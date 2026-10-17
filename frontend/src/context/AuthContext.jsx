@@ -1,37 +1,49 @@
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState
-} from "react";
 
+import { useEffect, useState } from "react";
+import { AuthContext } from "./AuthContext.js";
 import api from "../services/api";
-
-const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+
+  const [loading, setLoading] = useState(
+    () => Boolean(localStorage.getItem("sahayak_token"))
+  );
 
   useEffect(() => {
     const token = localStorage.getItem("sahayak_token");
 
     if (!token) {
-      setLoading(false);
       return;
     }
 
-    api.getMe()
-      .then((response) => {
-        setUser(response.data);
-      })
-      .catch(() => {
+    let active = true;
+
+    const initializeAuth = async () => {
+      try {
+        const response = await api.getMe();
+
+        if (active) {
+          setUser(response.data);
+        }
+      } catch {
         localStorage.removeItem("sahayak_token");
-        setUser(null);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
+
+        if (active) {
+          setUser(null);
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    };
+
+    initializeAuth();
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   const login = async (credentials) => {
@@ -73,22 +85,10 @@ export const AuthProvider = ({ children }) => {
         login,
         register,
         logout,
-        isAuthenticated: Boolean(user)
+        isAuthenticated: Boolean(user),
       }}
     >
       {children}
     </AuthContext.Provider>
   );
-};
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-
-  if (!context) {
-    throw new Error(
-      "useAuth must be used inside AuthProvider"
-    );
-  }
-
-  return context;
 };

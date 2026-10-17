@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
 import "./AdminDashboard.css";
@@ -15,7 +15,7 @@ const AdminDashboard = () => {
   const [success, setSuccess] = useState("");
 
   const [screen, setScreen] = useState("dashboard");
-  const [history, setHistory] = useState([]);
+  const [, setHistory] = useState([]);
   const [selectedProvider, setSelectedProvider] = useState(null);
   const [selectedResource, setSelectedResource] = useState(null);
   const [selectedRequest, setSelectedRequest] = useState(null);
@@ -38,9 +38,8 @@ const AdminDashboard = () => {
     user = null;
   }
 
-  const loadDashboard = async (showLoader = false) => {
+  const loadDashboard = useCallback(async (showLoader = false) => {
     if (showLoader) setLoading(true);
-    setError("");
 
     try {
       const [providerResponse, requestResponse] = await Promise.all([
@@ -50,6 +49,7 @@ const AdminDashboard = () => {
 
       setProviders(providerResponse.providers || []);
       setRequests(requestResponse.requests || []);
+      setError("");
     } catch (loadError) {
       const message = loadError?.message || "Failed to load admin data.";
       setError(message);
@@ -62,16 +62,20 @@ const AdminDashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [navigate]);
 
   useEffect(() => {
-    if (!token || user?.role !== "ADMIN") {
-      navigate("/admin/login");
-      return;
-    }
+  if (!token || user?.role !== "ADMIN") {
+    navigate("/admin/login");
+    return;
+  }
 
-    loadDashboard(true);
-  }, []);
+  const timeoutId = setTimeout(() => {
+    void loadDashboard(false);
+  }, 0);
+
+  return () => clearTimeout(timeoutId);
+  }, [token, user?.role, navigate, loadDashboard]);
 
   const getProviderStatus = (provider) =>
     String(

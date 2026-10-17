@@ -137,72 +137,72 @@ function ProviderDashboard() {
 
   const verificationStatus = provider?.verificationStatus || "PENDING";
 
-  const loadDashboard = useCallback(async (showLoader = true) => {
+  const loadDashboard = useCallback(async (showLoader = false) => {
     if (showLoader) setLoading(true);
 
-    setError("");
-
     try {
-      /*
-       * Keep these endpoint paths aligned with your existing backend.
-       * If your original component uses different paths or response
-       * formats, retain those original API calls.
-       */
-      const providerResult = await apiRequest("/api/providers/me");
+    const providerResult = await apiRequest("/api/providers/me");
 
-      const providerData =
-        providerResult?.provider ??
-        providerResult?.data ??
-        providerResult ??
-        null;
+    const providerData =
+      providerResult?.provider ??
+      providerResult?.data ??
+      providerResult ??
+      null;
 
-      setProvider(providerData);
+    setProvider(providerData);
 
-      if (providerData) {
-        setProviderForm((previous) => ({
-          ...previous,
-          organizationName:
-            providerData.organizationName ??
-            providerData.name ??
-            previous.organizationName,
-          organizationType:
-            providerData.organizationType ??
-            providerData.type ??
-            previous.organizationType,
-          contactPerson:
-            providerData.contactPerson ?? previous.contactPerson,
-          phone: providerData.phone ?? previous.phone,
-          city: providerData.city ?? previous.city,
-          address: providerData.address ?? previous.address,
-          registrationNumber:
-            providerData.registrationNumber ??
-            previous.registrationNumber,
-          description: providerData.description ?? previous.description,
-        }));
-      }
+    if (providerData) {
+      setProviderForm((previous) => ({
+        ...previous,
+        organizationName:
+          providerData.organizationName ??
+          providerData.name ??
+          previous.organizationName,
+        organizationType:
+          providerData.organizationType ??
+          providerData.type ??
+          previous.organizationType,
+        contactPerson:
+          providerData.contactPerson ?? previous.contactPerson,
+        phone: providerData.phone ?? previous.phone,
+        city: providerData.city ?? previous.city,
+        address: providerData.address ?? previous.address,
+        registrationNumber:
+          providerData.registrationNumber ?? previous.registrationNumber,
+        description: providerData.description ?? previous.description,
+      }));
+    }
 
-      const [resourceResult, requestResult] = await Promise.allSettled([
-        apiRequest("/api/resources/provider"),
-        apiRequest("/api/requests/provider"),
-      ]);
+    const [resourceResult, requestResult] = await Promise.allSettled([
+      apiRequest("/api/resources/provider"),
+      apiRequest("/api/requests/provider"),
+    ]);
 
-      if (resourceResult.status === "fulfilled") {
-        setResources(
-          normalizeList(resourceResult.value, ["resources", "data"])
-        );
-      } else {
-        setResources([]);
-        console.error("Could not load provider resources:", resourceResult.reason);
-      }
+    if (resourceResult.status === "fulfilled") {
+      setResources(
+        normalizeList(resourceResult.value, ["resources", "data"])
+      );
+    } else {
+      setResources([]);
+      console.error(
+        "Could not load provider resources:",
+        resourceResult.reason
+      );
+    }
 
-      if (requestResult.status === "fulfilled") {
-        setRequests(
-          normalizeList(requestResult.value, ["requests", "data"])
-        );
-      } else {
-        setRequests([]);
-        console.error("Could not load provider requests:", requestResult.reason);
-      }
+    if (requestResult.status === "fulfilled") {
+      setRequests(
+        normalizeList(requestResult.value, ["requests", "data"])
+      );
+    } else {
+      setRequests([]);
+      console.error(
+        "Could not load provider requests:",
+        requestResult.reason
+      );
+    }
+
+    setError("");
     } catch (loadError) {
       setError(getErrorMessage(loadError));
     } finally {
@@ -211,7 +211,11 @@ function ProviderDashboard() {
   }, []);
 
   useEffect(() => {
-    loadDashboard();
+  const timeoutId = setTimeout(() => {
+    void loadDashboard(false);
+  }, 0);
+
+  return () => clearTimeout(timeoutId);
   }, [loadDashboard]);
 
   function updateProviderForm(event) {
