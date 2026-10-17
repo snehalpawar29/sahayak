@@ -112,6 +112,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Install Trivy CLI
+        uses: aquasecurity/setup-trivy@v0.2.6
+        with:
+          version: v0.65.0
+
       - name: Build frontend image
         run: |
           docker build \
@@ -127,22 +132,22 @@ jobs:
       - name: Scan frontend image
         uses: aquasecurity/trivy-action@v0.33.1
         with:
-          version: v0.65.0
           image-ref: sahayak-frontend:ci
           format: table
-          vuln-type: os,library
+          scanners: vuln
           severity: CRITICAL,HIGH
           exit-code: '1'
           ignore-unfixed: true
+          skip-setup-trivy: true
 
       - name: Scan backend image
         uses: aquasecurity/trivy-action@v0.33.1
         with:
-          version: v0.65.0
           image-ref: sahayak-backend:ci
           format: table
-          vuln-type: os,library
+          scanners: vuln
           severity: CRITICAL,HIGH
           exit-code: '1'
           ignore-unfixed: true
+          skip-setup-trivy: true 
 
