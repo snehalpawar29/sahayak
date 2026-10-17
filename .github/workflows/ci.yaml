@@ -125,7 +125,7 @@ jobs:
             ./backend
 
       - name: Scan frontend image
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@v0.33.1
         with:
           image-ref: sahayak-frontend:ci
           format: table
@@ -135,7 +135,7 @@ jobs:
           ignore-unfixed: true
 
       - name: Scan backend image
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@v0.33.1
         with:
           image-ref: sahayak-backend:ci
           format: table
