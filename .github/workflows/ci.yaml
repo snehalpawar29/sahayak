@@ -103,7 +103,7 @@ jobs:
           tags: sahayak-frontend:ci
   
   
-    image-scan:
+      image-scan:
     name: Build and Scan Docker Images
     runs-on: ubuntu-latest
     needs:
