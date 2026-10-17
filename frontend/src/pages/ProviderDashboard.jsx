@@ -40,6 +40,7 @@ const viewDetails = {
 
 function getToken() {
   return (
+    localStorage.getItem("sahayak_token") ||
     localStorage.getItem("token") ||
     localStorage.getItem("accessToken") ||
     ""
