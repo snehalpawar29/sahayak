@@ -1,4 +1,3 @@
-
 name: Sahayak CD
 
 on:
@@ -127,6 +126,7 @@ jobs:
           zip -r "$RUNNER_TEMP/sahayak-eb-deployment.zip" \
             docker-compose.yml .platform
 
+      
       - name: Upload deployment bundle to S3
         shell: bash
         run: |
@@ -141,7 +141,7 @@ jobs:
           aws s3 cp "$RUNNER_TEMP/sahayak-eb-deployment.zip" \
             "s3://elasticbeanstalk-${AWS_REGION}-${AWS_ACCOUNT_ID}/${S3_KEY}"
 
-            - name: Create Elastic Beanstalk application version
+      - name: Create Elastic Beanstalk application version
         run: |
           aws elasticbeanstalk create-application-version \
             --application-name "$EB_APPLICATION" \
@@ -149,6 +149,7 @@ jobs:
             --description "GitHub commit ${IMAGE_TAG}" \
             --source-bundle \
               S3Bucket="elasticbeanstalk-${AWS_REGION}-${AWS_ACCOUNT_ID}",S3Key="$S3_KEY"
+
 
       - name: Deploy application version
         run: |
