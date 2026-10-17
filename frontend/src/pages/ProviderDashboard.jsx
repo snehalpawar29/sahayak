@@ -100,7 +100,28 @@ function formatStatus(status) {
     .toLowerCase()
     .replace(/\b\w/g, (character) => character.toUpperCase());
 }
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
 
+    reader.onload = () => {
+      const result = reader.result;
+
+      if (typeof result !== "string") {
+        reject(new Error("Could not read the registration document."));
+        return;
+      }
+
+      resolve(result.split(",")[1]);
+    };
+
+    reader.onerror = () => {
+      reject(new Error("Failed to read the registration document."));
+    };
+
+    reader.readAsDataURL(file);
+  });
+}
 function ProviderDashboard() {
   const [activeView, setActiveView] = useState("home");
 
@@ -287,21 +308,27 @@ function ProviderDashboard() {
     setSaving(true);
 
     try {
-      const formData = new FormData();
+    const documentBase64 = await fileToBase64(documentFile);
 
-      Object.entries(providerForm).forEach(([key, value]) => {
-        formData.append(key, value);
-      });
+    const payload = {
+      organization: providerForm.organizationName.trim(),
+      type: providerForm.organizationType,
+      city: providerForm.city.trim(),
+      address: providerForm.address.trim(),
+      phone: providerForm.phone.trim(),
+      documentBase64,
+      documentName: documentFile.name,
+      documentMimeType: documentFile.type,
+    };
 
-      formData.append("document", documentFile);
+    await apiRequest("/api/providers", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
 
-      await apiRequest("/api/providers", {
-        method: "POST",
-        body: formData,
-      });
+    setDocumentFile(null);
+    setSuccess("Provider registration submitted successfully.");
 
-      setDocumentFile(null);
-      setSuccess("Provider registration submitted successfully.");
       await loadDashboard(false);
     } catch (submitError) {
       setError(getErrorMessage(submitError));
