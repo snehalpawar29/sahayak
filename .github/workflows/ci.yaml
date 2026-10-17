@@ -127,6 +127,7 @@ jobs:
       - name: Scan frontend image
         uses: aquasecurity/trivy-action@v0.33.1
         with:
+          version: v0.65.0
           image-ref: sahayak-frontend:ci
           format: table
           vuln-type: os,library
@@ -137,6 +138,7 @@ jobs:
       - name: Scan backend image
         uses: aquasecurity/trivy-action@v0.33.1
         with:
+          version: v0.65.0
           image-ref: sahayak-backend:ci
           format: table
           vuln-type: os,library
