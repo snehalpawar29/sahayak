@@ -163,68 +163,69 @@ function ProviderDashboard() {
     if (showLoader) setLoading(true);
 
     try {
-    const providerResult = await apiRequest("/api/providers/me");
+      const providerResult = await apiRequest("/api/providers/me");
 
-    const providerData =
-      providerResult?.provider ??
-      providerResult?.data ??
-      providerResult ??
-      null;
+      const providerData =
+        providerResult?.provider ??
+        providerResult?.data ??
+        providerResult ??
+        null;
 
-    setProvider(providerData);
+      setProvider(providerData);
 
-    if (providerData) {
-      setProviderForm((previous) => ({
-        ...previous,
-        organizationName:
-          providerData.organizationName ??
-          providerData.name ??
-          previous.organizationName,
-        organizationType:
-          providerData.organizationType ??
-          providerData.type ??
-          previous.organizationType,
-        contactPerson:
-          providerData.contactPerson ?? previous.contactPerson,
-        phone: providerData.phone ?? previous.phone,
-        city: providerData.city ?? previous.city,
-        address: providerData.address ?? previous.address,
-        registrationNumber:
-          providerData.registrationNumber ?? previous.registrationNumber,
-        description: providerData.description ?? previous.description,
-      }));
-    }
+      if (providerData) {
+        setProviderForm((previous) => ({
+          ...previous,
+          organizationName:
+  providerData.organization ??
+  providerData.organizationName ??
+  providerData.name ??
+  previous.organizationName,
+          organizationType:
+            providerData.organizationType ??
+            providerData.type ??
+            previous.organizationType,
+          contactPerson:
+            providerData.contactPerson ?? previous.contactPerson,
+          phone: providerData.phone ?? previous.phone,
+          city: providerData.city ?? previous.city,
+          address: providerData.address ?? previous.address,
+          registrationNumber:
+            providerData.registrationNumber ?? previous.registrationNumber,
+          description: providerData.description ?? previous.description,
+        }));
+      }
 
-    const [resourceResult, requestResult] = await Promise.allSettled([
-      apiRequest("/api/resources/provider"),
-      apiRequest("/api/requests/provider"),
-    ]);
+      const [resourceResult, requestResult] = await Promise.allSettled([
+        apiRequest("/api/resources/provider"),
+        apiRequest("/api/requests/provider"),
+      ]);
 
-    if (resourceResult.status === "fulfilled") {
-      setResources(
-        normalizeList(resourceResult.value, ["resources", "data"])
-      );
-    } else {
-      setResources([]);
-      console.error(
-        "Could not load provider resources:",
-        resourceResult.reason
-      );
-    }
+      if (resourceResult.status === "fulfilled") {
+        setResources(
+          normalizeList(resourceResult.value, ["resources", "data"])
+        );
+      } else {
+        setResources([]);
+        console.error(
+          "Could not load provider resources:",
+          resourceResult.reason
+        );
+      }
 
-    if (requestResult.status === "fulfilled") {
-      setRequests(
-        normalizeList(requestResult.value, ["requests", "data"])
-      );
-    } else {
-      setRequests([]);
-      console.error(
-        "Could not load provider requests:",
-        requestResult.reason
-      );
-    }
+      if (requestResult.status === "fulfilled") {
+        setRequests(
+          normalizeList(requestResult.value, ["requests", "data"])
+        );
+      } else {
+        setRequests([]);
+        console.error(
+          "Could not load provider requests:",
+          requestResult.reason
+        );
+      }
 
-    setError("");
+      setError("");
     } catch (loadError) {
       setError(getErrorMessage(loadError));
     } finally {
@@ -233,11 +234,11 @@ function ProviderDashboard() {
   }, []);
 
   useEffect(() => {
-  const timeoutId = setTimeout(() => {
-    void loadDashboard(false);
-  }, 0);
+    const timeoutId = setTimeout(() => {
+      void loadDashboard(false);
+    }, 0);
 
-  return () => clearTimeout(timeoutId);
+    return () => clearTimeout(timeoutId);
   }, [loadDashboard]);
 
   function updateProviderForm(event) {
@@ -308,26 +309,26 @@ function ProviderDashboard() {
     setSaving(true);
 
     try {
-    const documentBase64 = await fileToBase64(documentFile);
+      const documentBase64 = await fileToBase64(documentFile);
 
-    const payload = {
-      organization: providerForm.organizationName.trim(),
-      type: providerForm.organizationType,
-      city: providerForm.city.trim(),
-      address: providerForm.address.trim(),
-      phone: providerForm.phone.trim(),
-      documentBase64,
-      documentName: documentFile.name,
-      documentMimeType: documentFile.type,
-    };
+      const payload = {
+        organization: providerForm.organizationName.trim(),
+        type: providerForm.organizationType,
+        city: providerForm.city.trim(),
+        address: providerForm.address.trim(),
+        phone: providerForm.phone.trim(),
+        documentBase64,
+        documentName: documentFile.name,
+        documentMimeType: documentFile.type,
+      };
 
-    await apiRequest("/api/providers", {
-      method: "POST",
-      body: JSON.stringify(payload),
-    });
+      await apiRequest("/api/providers", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
 
-    setDocumentFile(null);
-    setSuccess("Provider registration submitted successfully.");
+      setDocumentFile(null);
+      setSuccess("Provider registration submitted successfully.");
 
       await loadDashboard(false);
     } catch (submitError) {
@@ -765,10 +766,17 @@ function ProviderDashboard() {
       )}
 
       {/* REGISTER RESOURCE: existing provider profile and verification */}
+
+      {/* REGISTER RESOURCE: existing provider profile and verification */}
       {activeView === "register" && provider && (
         <section className="provider-panel">
           <div className="provider-panel-header">
-            <h2>{provider.organizationName || provider.name || "Provider Profile"}</h2>
+            <h2>
+              {provider.organization ||
+                provider.organizationName ||
+                provider.name ||
+                "Provider Profile"}
+            </h2>
             <p>
               Your provider profile and verification status are shown below.
             </p>
@@ -778,25 +786,34 @@ function ProviderDashboard() {
             <div className="provider-profile-item">
               <span>Organization</span>
               <strong>
-                {provider.organizationName || provider.name || "—"}
+                {provider.organization ||
+                  provider.organizationName ||
+                  provider.name ||
+                  "Not provided"}
               </strong>
             </div>
 
             <div className="provider-profile-item">
               <span>Organization Type</span>
               <strong>
-                {formatStatus(provider.organizationType || provider.type)}
+                {formatStatus(
+                  provider.type || provider.organizationType
+                )}
               </strong>
             </div>
 
             <div className="provider-profile-item">
               <span>City</span>
-              <strong>{provider.city || "—"}</strong>
+              <strong>{provider.city || "Not provided"}</strong>
             </div>
 
             <div className="provider-profile-item">
               <span>Verification Status</span>
-              <strong className={`provider-status provider-status-${String(verificationStatus).toLowerCase()}`}>
+              <strong
+                className={`provider-status provider-status-${String(
+                  verificationStatus
+                ).toLowerCase()}`}
+              >
                 {formatStatus(verificationStatus)}
               </strong>
             </div>
@@ -813,8 +830,8 @@ function ProviderDashboard() {
               <p>
                 {String(verificationStatus).toUpperCase() === "REJECTED"
                   ? provider.rejectionReason ||
-                    provider.rejectionNotes ||
-                    "Please upload an updated registration document for review."
+                  provider.rejectionNotes ||
+                  "Please upload an updated registration document for review."
                   : "Your provider profile must be approved by an administrator before you can register resources or handle requests."}
               </p>
 
@@ -826,6 +843,7 @@ function ProviderDashboard() {
                     accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
                     onChange={handleDocumentChange}
                   />
+
                   {documentFile && (
                     <span className="provider-file-name">
                       Selected: {documentFile.name}
@@ -855,6 +873,7 @@ function ProviderDashboard() {
           )}
         </section>
       )}
+
 
       {/* REGISTER RESOURCE: resource creation and editing form */}
       {activeView === "register" && providerVerified && (
@@ -1035,11 +1054,10 @@ function ProviderDashboard() {
                     </span>
 
                     <span
-                      className={`provider-status ${
-                        resource.available
+                      className={`provider-status ${resource.available
                           ? "provider-status-approved"
                           : "provider-status-rejected"
-                      }`}
+                        }`}
                     >
                       {resource.available ? "Available" : "Unavailable"}
                     </span>
@@ -1142,8 +1160,8 @@ function ProviderDashboard() {
                         <span className="request-category">
                           {formatStatus(
                             request.category ||
-                              request.resourceCategory ||
-                              request.resource?.category
+                            request.resourceCategory ||
+                            request.resource?.category
                           )}
                         </span>
 
