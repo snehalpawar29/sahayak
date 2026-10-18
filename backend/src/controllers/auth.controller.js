@@ -55,7 +55,7 @@ export const register = async (req, res) => {
       });
     }
 
-    const allowedRoles = ["CITIZEN", "PROVIDER", "ADMIN"];
+    const allowedRoles = ["CITIZEN", "PROVIDER"];
 
     if (!allowedRoles.includes(role)) {
       return res.status(400).json({
