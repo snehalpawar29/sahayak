@@ -78,15 +78,29 @@ async function apiRequest(path, options = {}) {
   return data;
 }
 
+
+
 function normalizeList(data, keys = []) {
   if (Array.isArray(data)) return data;
 
   for (const key of keys) {
-    if (Array.isArray(data?.[key])) return data[key];
+    if (Array.isArray(data?.[key])) {
+      return data[key];
+    }
+
+    if (Array.isArray(data?.data?.[key])) {
+      return data.data[key];
+    }
+  }
+
+  if (Array.isArray(data?.data)) {
+    return data.data;
   }
 
   return [];
 }
+
+
 
 function getErrorMessage(error) {
   return error instanceof Error ? error.message : "Something went wrong.";
