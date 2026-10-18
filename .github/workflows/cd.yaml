@@ -28,7 +28,7 @@ jobs:
       AWS_REGION: us-east-1
       AWS_ACCOUNT_ID: "033161567802"
       EB_APPLICATION: Sahayak
-      EB_ENVIRONMENT: Sahayak-env-1
+      EB_ENVIRONMENT: Sahayak-env
       IMAGE_TAG: ${{ github.event.workflow_run.head_sha }}
 
     steps:
