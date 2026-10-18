@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import {
     Link,
-    useNavigate,
     useParams
 } from "react-router-dom";
 
@@ -12,11 +11,12 @@ import Loading from "../components/Loading";
 const ResourceDetails = () => {
     const { id } = useParams();
     const { user } = useAuth();
-    const navigate = useNavigate();
 
     const [resource, setResource] = useState(null);
     const [quantity, setQuantity] = useState(1);
     const [priority, setPriority] = useState("HIGH");
+    const [requesterName, setRequesterName] = useState("");
+    const [requesterEmail, setRequesterEmail] = useState("");
     const [message, setMessage] = useState("");
     const [loading, setLoading] = useState(true);
     const [requesting, setRequesting] = useState(false);
@@ -43,30 +43,28 @@ const ResourceDetails = () => {
     const handleRequest = async (event) => {
         event.preventDefault();
 
-        if (!user) {
-            navigate("/login", {
-                state: {
-                    from: `/resources/${id}`
-                }
-            });
-
-            return;
-        }
-
         setRequesting(true);
         setError("");
         setSuccess("");
 
         try {
-            await api.createRequest({
+            const requestData = {
                 resourceId: Number(id),
                 quantity: Number(quantity),
                 priority,
                 message
-            });
+            };
+
+            const response = user
+                ? await api.createRequest(requestData)
+                : await api.createGuestRequest({
+                    ...requestData,
+                    requesterName: requesterName.trim(),
+                    requesterEmail: requesterEmail.trim()
+                });
 
             setSuccess(
-                "Emergency request submitted successfully."
+                `${response?.message || "Emergency request submitted successfully."}${response?.data?.id ? ` Reference: #${response.data.id}.` : ""}`
             );
 
             setQuantity(1);
@@ -181,8 +179,8 @@ const ResourceDetails = () => {
                     </div>
                 </section>
 
-                {user?.role === "CITIZEN" &&
-                    resource.available && (
+                {resource.available &&
+                    (!user || user?.role === "CITIZEN") && (
                         <form
                             className="request-card"
                             onSubmit={handleRequest}
@@ -204,6 +202,37 @@ const ResourceDetails = () => {
                                 <div className="alert success">
                                     {success}
                                 </div>
+                            )}
+
+                            {!user && (
+                                <>
+                                    <label>
+                                        Full name
+                                        <input
+                                            type="text"
+                                            name="requesterName"
+                                            autoComplete="name"
+                                            minLength={2}
+                                            maxLength={120}
+                                            value={requesterName}
+                                            onChange={(event) => setRequesterName(event.target.value)}
+                                            required
+                                        />
+                                    </label>
+
+                                    <label>
+                                        Email address
+                                        <input
+                                            type="email"
+                                            name="requesterEmail"
+                                            autoComplete="email"
+                                            maxLength={254}
+                                            value={requesterEmail}
+                                            onChange={(event) => setRequesterEmail(event.target.value)}
+                                            required
+                                        />
+                                    </label>
+                                </>
                             )}
 
                             <label>
@@ -269,23 +298,6 @@ const ResourceDetails = () => {
                         </form>
                     )}
 
-                {!user && (
-                    <div className="request-card">
-                        <h2>Need this resource?</h2>
-
-                        <p>
-                            Sign in to submit an emergency
-                            request.
-                        </p>
-
-                        <Link
-                            to="/login"
-                            className="btn btn-primary btn-full"
-                        >
-                            Sign In
-                        </Link>
-                    </div>
-                )}
             </div>
         </main>
     );

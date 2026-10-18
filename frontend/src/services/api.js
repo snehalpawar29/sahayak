@@ -25,6 +25,7 @@ export const api = {
   createResource: (resourceData) => request("/resources", { method: "POST", body: JSON.stringify(resourceData) }),
   updateResource: (id, resourceData) => request(`/resources/${id}`, { method: "PATCH", body: JSON.stringify(resourceData) }),
   deleteResource: (id) => request(`/resources/${id}`, { method: "DELETE" }),
+  createGuestRequest: (requestData) => request("/requests/guest", { method: "POST", body: JSON.stringify(requestData) }),
   createRequest: (requestData) => request("/requests", { method: "POST", body: JSON.stringify(requestData) }),
   getMyRequests: () => request("/requests/my"),
   getProviderRequests: () => request("/requests/provider"),

@@ -102,10 +102,12 @@ model EmergencyRequest {
   status          RequestStatus   @default(PENDING)
   message         String?
   rejectionReason String?
+  requesterName   String?
+  requesterEmail  String?
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
-  userId          Int
+  userId          Int?
   resourceId      Int
-  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user            User?           @relation(fields: [userId], references: [id], onDelete: Cascade)
   resource        Resource        @relation(fields: [resourceId], references: [id], onDelete: Cascade)
 }

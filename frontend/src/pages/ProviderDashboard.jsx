@@ -1194,27 +1194,41 @@ function ProviderDashboard() {
 
                     <div className="request-details">
                       <p>
+                        <strong>Requester:</strong>{" "}
+                        {request.requesterName || request.user?.name || "Unknown requester"}
+                      </p>
+
+                      {(request.requesterEmail || request.user?.email) && (
+                        <p>
+                          <strong>Email:</strong>{" "}
+                          <a href={`mailto:${request.requesterEmail || request.user?.email}`}>
+                            {request.requesterEmail || request.user?.email}
+                          </a>
+                        </p>
+                      )}
+
+                      <p>
                         <strong>Quantity:</strong>{" "}
                         {request.quantity ?? request.requestedQuantity ?? "—"}
                       </p>
 
                       <p>
-                        <strong>City:</strong> {request.city || "—"}
+                        <strong>City:</strong> {request.resource?.city || request.user?.city || request.city || "—"}
                       </p>
 
                       <p>
-                        <strong>Address:</strong> {request.address || "—"}
+                        <strong>Address:</strong> {request.resource?.address || request.address || "—"}
                       </p>
 
-                      {request.description && (
+                      {(request.message || request.description) && (
                         <p>
-                          <strong>Details:</strong> {request.description}
+                          <strong>Details:</strong> {request.message || request.description}
                         </p>
                       )}
 
-                      {request.reason && (
+                      {(request.reason || request.rejectionReason) && (
                         <p>
-                          <strong>Reason:</strong> {request.reason}
+                          <strong>Reason:</strong> {request.reason || request.rejectionReason}
                         </p>
                       )}
                     </div>
