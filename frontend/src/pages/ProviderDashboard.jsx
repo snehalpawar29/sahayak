@@ -197,7 +197,7 @@ function ProviderDashboard() {
       }
 
       const [resourceResult, requestResult] = await Promise.allSettled([
-        apiRequest("/api/resources/provider"),
+        apiRequest("/api/resources"),
         apiRequest("/api/requests/provider"),
       ]);
 
