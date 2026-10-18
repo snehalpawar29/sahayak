@@ -177,10 +177,10 @@ function ProviderDashboard() {
         setProviderForm((previous) => ({
           ...previous,
           organizationName:
-  providerData.organization ??
-  providerData.organizationName ??
-  providerData.name ??
-  previous.organizationName,
+            providerData.organization ??
+            providerData.organizationName ??
+            providerData.name ??
+            previous.organizationName,
           organizationType:
             providerData.organizationType ??
             providerData.type ??
@@ -1055,8 +1055,8 @@ function ProviderDashboard() {
 
                     <span
                       className={`provider-status ${resource.available
-                          ? "provider-status-approved"
-                          : "provider-status-rejected"
+                        ? "provider-status-approved"
+                        : "provider-status-rejected"
                         }`}
                     >
                       {resource.available ? "Available" : "Unavailable"}

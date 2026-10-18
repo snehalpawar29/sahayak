@@ -1,0 +1,16 @@
+aws_region    = "us-east-1"
+environment   = "dev"
+project_name  = "sahayak"
+
+application_name = "sahayak"
+environment_name = "sahayak-dev"
+
+instance_type = "t3.micro"
+
+backend_image  = "033161567802.dkr.ecr.us-east-1.amazonaws.com/sahayak-backend:REPLACE_WITH_EXISTING_TAG"
+frontend_image = "033161567802.dkr.ecr.us-east-1.amazonaws.com/sahayak-frontend:REPLACE_WITH_EXISTING_TAG"
+
+database_url_parameter_name = "/sahayak/prod/DATABASE_URL"
+jwt_secret_parameter_name   = "/sahayak/prod/JWT_SECRET"
+
+frontend_url = "/sahayak/prod/FRONTEND_URL"
