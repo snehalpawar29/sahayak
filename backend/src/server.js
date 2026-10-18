@@ -12,13 +12,35 @@ const app = express();
 // Trust exactly one reverse proxy (Nginx) in the deployed Compose setup.
 app.set("trust proxy", 1);
 const PORT = process.env.PORT || 5000;
-const limiter = rateLimit({
+
+const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  limit: 100,
+  limit: 300,
   standardHeaders: "draft-8",
   legacyHeaders: false,
-  message: { success: false, message: "Too many requests. Please try again later." }
+  message: {
+    success: false,
+    message: "Too many API requests. Please try again later."
+  }
 });
+
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: "Too many login attempts. Please try again later."
+  }
+});
+
+// Apply the general limit to API endpoints.
+app.use("/api", apiLimiter);
+
+// Apply the stricter limit specifically to login.
+app.use("/api/auth/login", loginLimiter);
+
 
 app.use(cors({ origin: process.env.FRONTEND_URL || "http://localhost:5173" }));
 // Provider authorization documents are base64-encoded in JSON and stored in PostgreSQL.
