@@ -4,6 +4,7 @@ import {
   createResource,
   getResources,
   getResourceById,
+  getProviderResources,
   updateResource,
   deleteResource
 } from "../controllers/resource.controller.js";
@@ -23,6 +24,13 @@ const router = express.Router();
  * Anyone can search/view available resources.
  */
 router.get("/", getResources);
+router.get("/", getResources);
+router.get(
+  "/provider",
+  authMiddleware,
+  requireVerifiedProvider,
+  getProviderResources
+);
 
 router.get("/:id", getResourceById);
 

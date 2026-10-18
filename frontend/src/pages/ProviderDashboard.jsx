@@ -197,7 +197,7 @@ function ProviderDashboard() {
       }
 
       const [resourceResult, requestResult] = await Promise.allSettled([
-        apiRequest("/api/resources"),
+        apiRequest("/api/resources/provider"),
         apiRequest("/api/requests/provider"),
       ]);
 
@@ -411,7 +411,7 @@ function ProviderDashboard() {
 
       if (editingResourceId !== null) {
         await apiRequest(`/api/resources/${editingResourceId}`, {
-          method: "PUT",
+          method: "PATCH",
           body: JSON.stringify(payload),
         });
 
@@ -469,7 +469,7 @@ function ProviderDashboard() {
 
     try {
       await apiRequest(`/api/resources/${resource.id}`, {
-        method: "PUT",
+        method: "PATCH",
         body: JSON.stringify({
           name: resource.name,
           category: resource.category,

@@ -194,7 +194,40 @@ export const getResources = async (req, res) => {
   }
 };
 
+export const getProviderResources = async (req, res) => {
+  try {
+    if (!req.provider) {
+      return res.status(403).json({
+        success: false,
+        message: "Verified provider authorization required",
+      });
+    }
 
+    const resources = await prisma.resource.findMany({
+      where: {
+        providerId: req.provider.id,
+      },
+      orderBy: {
+        updatedAt: "desc",
+      },
+    });
+
+    return res.status(200).json({
+      success: true,
+      count: resources.length,
+      data: {
+        resources,
+      },
+    });
+  } catch (error) {
+    console.error("Get provider resources error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch provider resources",
+    });
+  }
+};
 /*
 |--------------------------------------------------------------------------
 | GET RESOURCE BY ID
