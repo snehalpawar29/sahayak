@@ -31,6 +31,73 @@ export const createRequest = async (req, res) => {
   }
 };
 
+// Public request path for citizens who do not have a Sahayak account.
+export const createGuestRequest = async (req, res) => {
+  try {
+    const requesterName = typeof req.body?.requesterName === "string"
+      ? req.body.requesterName.trim()
+      : "";
+    const requesterEmail = typeof req.body?.requesterEmail === "string"
+      ? req.body.requesterEmail.trim().toLowerCase()
+      : "";
+    const { resourceId, quantity, priority = "HIGH", message } = req.body || {};
+    const parsedResourceId = Number(resourceId);
+    const parsedQuantity = Number(quantity);
+    const validPriorities = ["LOW", "MEDIUM", "HIGH", "CRITICAL"];
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (requesterName.length < 2 || requesterName.length > 120) {
+      return res.status(400).json({
+        success: false,
+        message: "Please enter a name between 2 and 120 characters."
+      });
+    }
+    if (requesterEmail.length > 254 || !emailPattern.test(requesterEmail)) {
+      return res.status(400).json({ success: false, message: "Please enter a valid email address." });
+    }
+    if (!Number.isInteger(parsedResourceId) || !Number.isInteger(parsedQuantity) || parsedQuantity <= 0) {
+      return res.status(400).json({ success: false, message: "Valid resourceId and positive quantity are required." });
+    }
+    if (!validPriorities.includes(priority)) {
+      return res.status(400).json({ success: false, message: "Invalid request priority." });
+    }
+    if (typeof message === "string" && message.trim().length > 2000) {
+      return res.status(400).json({ success: false, message: "The message must be 2,000 characters or fewer." });
+    }
+
+    const resource = await prisma.resource.findUnique({
+      where: { id: parsedResourceId },
+      include: { provider: { select: { verified: true } } }
+    });
+    if (!resource || !resource.provider?.verified) {
+      return res.status(404).json({ success: false, message: "Resource not found." });
+    }
+    if (!resource.available || resource.quantity < parsedQuantity) {
+      return res.status(409).json({ success: false, message: "Requested resource is currently unavailable or the quantity is too high." });
+    }
+
+    const request = await prisma.emergencyRequest.create({
+      data: {
+        quantity: parsedQuantity,
+        priority,
+        message: typeof message === "string" ? message.trim() || null : null,
+        requesterName,
+        requesterEmail,
+        resourceId: parsedResourceId
+      },
+      include: {
+        resource: {
+          include: { provider: { select: { id: true, organization: true, city: true } } }
+        }
+      }
+    });
+    return res.status(201).json({ success: true, message: "Emergency request submitted. The provider will review your request.", data: request });
+  } catch (error) {
+    console.error("Guest request creation error:", error);
+    return res.status(500).json({ success: false, message: "Unable to create emergency request." });
+  }
+};
+
 export const getMyRequests = async (req, res) => {
   try {
     const requests = await prisma.emergencyRequest.findMany({

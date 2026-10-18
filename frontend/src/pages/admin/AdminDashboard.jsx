@@ -152,6 +152,8 @@ const AdminDashboard = () => {
       const searchableText = [
         request.user?.name,
         request.user?.email,
+        request.requesterName,
+        request.requesterEmail,
         request.user?.city,
         request.resource?.name,
         request.resource?.category,
@@ -960,7 +962,7 @@ const AdminDashboard = () => {
                   {renderStatus(request.status)}
                 </div>
                 <div className="request-card-meta">
-                  <span><strong>Citizen:</strong> {request.user?.name || "Unknown"}</span>
+                  <span><strong>Requester:</strong> {request.requesterName || request.user?.name || "Unknown"}</span>
                   <span><strong>Provider:</strong> {request.resource?.provider?.organization || "Unavailable"}</span>
                   <span><strong>Quantity:</strong> {request.quantity ?? "—"}</span>
                   <span><strong>Priority:</strong> {formatStatus(request.priority || "MEDIUM")}</span>
@@ -1012,8 +1014,8 @@ const AdminDashboard = () => {
             <div className="detail-item"><span>Status</span><strong>{formatStatus(request.status)}</strong></div>
             <div className="detail-item"><span>Priority</span><strong>{formatStatus(request.priority || "MEDIUM")}</strong></div>
             <div className="detail-item"><span>Quantity requested</span><strong>{request.quantity ?? "—"}</strong></div>
-            <div className="detail-item"><span>Citizen name</span><strong>{request.user?.name || "Unknown"}</strong></div>
-            <div className="detail-item"><span>Citizen email</span><strong>{request.user?.email || "—"}</strong></div>
+            <div className="detail-item"><span>Requester name</span><strong>{request.requesterName || request.user?.name || "Unknown"}</strong></div>
+            <div className="detail-item"><span>Requester email</span><strong>{request.requesterEmail || request.user?.email || "—"}</strong></div>
             <div className="detail-item"><span>Citizen city</span><strong>{request.user?.city || "—"}</strong></div>
             <div className="detail-item"><span>Resource</span><strong>{request.resource?.name || "Unavailable"}</strong></div>
             <div className="detail-item"><span>Resource category</span><strong>{formatCategory(request.resource?.category)}</strong></div>
