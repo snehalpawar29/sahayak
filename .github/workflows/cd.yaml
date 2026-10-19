@@ -1,3 +1,4 @@
+
 name: Sahayak CD
 
 on:
@@ -13,12 +14,12 @@ permissions:
   id-token: write
 
 concurrency:
-  group: sahayak-cd-production
+  group: sahayak-cluster-production
   cancel-in-progress: false
 
 jobs:
   deploy:
-    name: Deploy to Elastic Beanstalk
+    name: Deploy to Elastic Beanstalk Cluster
     if: >-
       github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.head_branch == 'main'
@@ -28,148 +29,96 @@ jobs:
       AWS_REGION: us-east-1
       AWS_ACCOUNT_ID: "033161567802"
       EB_APPLICATION: Sahayak
-      EB_ENVIRONMENT: Sahayak-env
+      BACKEND_ENVIRONMENT: Sahayak-env
+      FRONTEND_ENVIRONMENT: sahayak-frontend-env
       IMAGE_TAG: ${{ github.event.workflow_run.head_sha }}
 
     steps:
-      - name: Checkout the exact commit tested by CI
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.workflow_run.head_sha }}
-
-      - name: Configure AWS credentials using OIDC
+      - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::033161567802:role/SahayakGitHubActionsECRRole
           aws-region: us-east-1
 
-      - name: Prepare Elastic Beanstalk deployment bundle
+      - name: Verify ECR images
         shell: bash
         run: |
           set -euo pipefail
 
-          BUNDLE_DIR="$RUNNER_TEMP/sahayak-eb-bundle"
-          mkdir -p "$BUNDLE_DIR/.platform/hooks/predeploy"
+          aws ecr describe-images \
+            --repository-name sahayak-backend \
+            --image-ids imageTag="$IMAGE_TAG"
 
-          cat > "$BUNDLE_DIR/docker-compose.yml" <<EOF
-          services:
-            backend:
-              image: 033161567802.dkr.ecr.us-east-1.amazonaws.com/sahayak-backend:${IMAGE_TAG}
-              restart: unless-stopped
-              environment:
-                DATABASE_URL: \${DATABASE_URL}
-                JWT_SECRET: \${JWT_SECRET}
-                JWT_EXPIRES_IN: \${JWT_EXPIRES_IN:-7d}
-                FRONTEND_URL: \${FRONTEND_URL}
-                PORT: "5000"
-                NODE_ENV: production
-              expose:
-                - "5000"
-              networks:
-                - sahayak-network
+          aws ecr describe-images \
+            --repository-name sahayak-frontend \
+            --image-ids imageTag="$IMAGE_TAG"
 
-            frontend:
-              image: 033161567802.dkr.ecr.us-east-1.amazonaws.com/sahayak-frontend:${IMAGE_TAG}
-              restart: unless-stopped
-              ports:
-                - "80:80"
-              depends_on:
-                - backend
-              networks:
-                - sahayak-network
-
-          networks:
-            sahayak-network:
-              driver: bridge
-          EOF
-
-          cat > "$BUNDLE_DIR/.platform/hooks/predeploy/01-write-compose-env.sh" <<'HOOK'
-          #!/bin/bash
-          set -euo pipefail
-
-          python3 - <<'PY'
-          import os
-          import pathlib
-          import sys
-
-          required = ["DATABASE_URL", "JWT_SECRET", "FRONTEND_URL"]
-          missing = [key for key in required if not os.environ.get(key)]
-          if missing:
-              sys.exit("Missing Elastic Beanstalk environment properties: " + ", ".join(missing))
-
-          values = {
-              "DATABASE_URL": os.environ["DATABASE_URL"],
-              "JWT_SECRET": os.environ["JWT_SECRET"],
-              "JWT_EXPIRES_IN": os.environ.get("JWT_EXPIRES_IN", "7d"),
-              "FRONTEND_URL": os.environ["FRONTEND_URL"],
-          }
-
-          def quote(value):
-              value = value.replace("\\", "\\\\")
-              value = value.replace('"', '\\"')
-              value = value.replace("$", "$$")
-              value = value.replace("\n", "\\n").replace("\r", "\\r")
-              return '"' + value + '"'
-
-          env_file = pathlib.Path("/var/app/staging/.env")
-          env_file.write_text(
-              "".join(f"{key}={quote(value)}\n" for key, value in values.items()),
-              encoding="utf-8"
-          )
-          env_file.chmod(0o600)
-          PY
-          HOOK
-
-          chmod +x "$BUNDLE_DIR/.platform/hooks/predeploy/01-write-compose-env.sh"
-
-          cd "$BUNDLE_DIR"
-          zip -r "$RUNNER_TEMP/sahayak-eb-deployment.zip" \
-            docker-compose.yml .platform
-
-      
-      - name: Upload deployment bundle to S3
+      - name: Create backend application version
         shell: bash
         run: |
           set -euo pipefail
 
-          VERSION_LABEL="sahayak-${IMAGE_TAG}-${GITHUB_RUN_ATTEMPT}"
-          S3_KEY="sahayak/deployments/${VERSION_LABEL}.zip"
+          IMAGE_URI="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/sahayak-backend:${IMAGE_TAG}"
+          VERSION="backend-${IMAGE_TAG}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
 
-          echo "VERSION_LABEL=${VERSION_LABEL}" >> "$GITHUB_ENV"
-          echo "S3_KEY=${S3_KEY}" >> "$GITHUB_ENV"
-
-          aws s3 cp "$RUNNER_TEMP/sahayak-eb-deployment.zip" \
-            "s3://elasticbeanstalk-${AWS_REGION}-${AWS_ACCOUNT_ID}/${S3_KEY}"
-
-      - name: Create Elastic Beanstalk application version
-        run: |
           aws elasticbeanstalk create-application-version \
             --application-name "$EB_APPLICATION" \
-            --version-label "$VERSION_LABEL" \
-            --description "GitHub commit ${IMAGE_TAG}" \
-            --source-bundle \
-              S3Bucket="elasticbeanstalk-${AWS_REGION}-${AWS_ACCOUNT_ID}",S3Key="$S3_KEY"
+            --version-label "$VERSION" \
+            --description "Backend image ${IMAGE_TAG}" \
+            --image-configuration "{\"Source\":{\"Uri\":\"${IMAGE_URI}\"}}"
 
+          echo "BACKEND_VERSION=$VERSION" >> "$GITHUB_ENV"
 
-      - name: Deploy application version
-        run: |
-          aws elasticbeanstalk update-environment \
-            --application-name "$EB_APPLICATION" \
-            --environment-name "$EB_ENVIRONMENT" \
-            --version-label "$VERSION_LABEL"
-
-      - name: Wait for deployment to finish
-        run: |
-          aws elasticbeanstalk wait environment-updated \
-            --environment-names "$EB_ENVIRONMENT"
-
-      - name: Report deployment status
+      - name: Deploy backend
         shell: bash
         run: |
           set -euo pipefail
+
+          aws elasticbeanstalk update-environment \
+            --application-name "$EB_APPLICATION" \
+            --environment-name "$BACKEND_ENVIRONMENT" \
+            --version-label "$BACKEND_VERSION"
+
+          aws elasticbeanstalk wait environment-updated \
+            --environment-names "$BACKEND_ENVIRONMENT"
 
           aws elasticbeanstalk describe-environments \
             --application-name "$EB_APPLICATION" \
-            --environment-names "$EB_ENVIRONMENT" \
-            --query 'Environments[0].[Status,Health,VersionLabel]' \
+            --environment-names "$BACKEND_ENVIRONMENT" \
+            --query 'Environments[0].[EnvironmentName,Status,Health,VersionLabel]' \
+            --output table
+
+      - name: Create frontend application version
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          IMAGE_URI="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/sahayak-frontend:${IMAGE_TAG}"
+          VERSION="frontend-${IMAGE_TAG}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+
+          aws elasticbeanstalk create-application-version \
+            --application-name "$EB_APPLICATION" \
+            --version-label "$VERSION" \
+            --description "Frontend image ${IMAGE_TAG}" \
+            --image-configuration "{\"Source\":{\"Uri\":\"${IMAGE_URI}\"}}"
+
+          echo "FRONTEND_VERSION=$VERSION" >> "$GITHUB_ENV"
+
+      - name: Deploy frontend
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          aws elasticbeanstalk update-environment \
+            --application-name "$EB_APPLICATION" \
+            --environment-name "$FRONTEND_ENVIRONMENT" \
+            --version-label "$FRONTEND_VERSION"
+
+          aws elasticbeanstalk wait environment-updated \
+            --environment-names "$FRONTEND_ENVIRONMENT"
+
+          aws elasticbeanstalk describe-environments \
+            --application-name "$EB_APPLICATION" \
+            --environment-names "$FRONTEND_ENVIRONMENT" \
+            --query 'Environments[0].[EnvironmentName,Status,Health,VersionLabel]' \
             --output table
