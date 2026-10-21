@@ -12,9 +12,14 @@ coverage/
 
 .DS_Store
 
-.vscode/
+.vscode/a
 .idea/
 
 postgres_data/
 
 sahayak-pre-rds.dump
+
+.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl
