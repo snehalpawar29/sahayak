@@ -44,6 +44,8 @@ Use these guides to understand, deploy, and explore Sahayak.
 
 **Recommended reading order:** Start with the Website Flows guide to understand the application, then follow the Deployment Guide to deploy it on AWS.
 
+- 📋 [DevOps Process & Hackathon Documentation](docs/DEVOPS_PROCESS.md)
+
 ## 🏗️ System Architecture
 
 <p align="center">
