@@ -1,275 +1,264 @@
- 
-<div align="center">
+# 🚨 Sahayak — Emergency Resource Finder
 
-# 🚨 SAHAYAK
-### Emergency Resource Finder
-
-**Connecting people with essential emergency resources — when every minute matters.**
-
-<p>
-  <img src="https://img.shields.io/badge/PROJECT-Emergency%20Resource%20Finder-e63946?style=for-the-badge" alt="Emergency Resource Finder"/>
-  <img src="https://img.shields.io/badge/FRONTEND-React%20%2B%20Vite-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React and Vite"/>
-  <img src="https://img.shields.io/badge/BACKEND-Node.js%20%2B%20Express-339933?style=for-the-badge&logo=nodedotjs&logoColor=white" alt="Node.js and Express"/>
-  <img src="https://img.shields.io/badge/DATABASE-PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL"/>
-  <img src="https://img.shields.io/badge/CLOUD-AWS-FF9900?style=for-the-badge&logo=amazonaws&logoColor=white" alt="AWS"/>
-  <img src="https://img.shields.io/badge-CI%2FCD-GitHub%20Actions-2088FF?style=for-the-badge&logo=githubactions&logoColor=white" alt="GitHub Actions"/>
+<p align="center">
+  <img src="https://img.shields.io/badge/Project-Emergency%20Resource%20Finder-e63946?style=for-the-badge" alt="Emergency Resource Finder" />
+  <img src="https://img.shields.io/badge/Cloud-AWS-FF9900?style=for-the-badge&logo=amazonaws&logoColor=white" alt="AWS" />
+  <img src="https://img.shields.io/badge/Backend-Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white" alt="Node.js" />
+  <img src="https://img.shields.io/badge/Database-PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL" />
+  <img src="https://img.shields.io/badge/Containers-Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker" />
 </p>
 
-[📂 Source Code](https://github.com/snehalpawar29/sahayak) ·
-[⚙️ CI Workflow](.github/workflows/ci.yaml) ·
-[🚀 CD Workflow](.github/workflows/cd.yaml) ·
-[📖 Deployment Guide](SAHAYAK_DEPLOYMENT_GUIDE.md)
+<p align="center">
+  <b>Connecting people with essential emergency resources when every minute matters.</b>
+</p>
 
-</div>
+<p align="center">
+  <a href="https://github.com/snehalpawar29/sahayak">📂 Repository</a> •
+  <a href="SAHAYAK_DEPLOYMENT_GUIDE.md">☁️ Deployment Guide</a> •
+  <a href="SAHAYAK_WEBSITE_FLOWS.md">🔄 Website Flows</a> •
+  <a href="https://github.com/snehalpawar29">👩‍💻 Developer</a>
+</p>
 
 ---
 
-## 🌍 About the project
+## 🌟 About the Project
 
-During an emergency, finding essential resources quickly can be challenging. **Sahayak** is a full-stack emergency resource finder designed to connect citizens, resource providers, and administrators through one platform.
+**Sahayak** is an emergency resource finder designed to help people discover essential resources and submit emergency requests through a centralized platform.
 
-The project combines an emergency-resource management application with containerization, cloud infrastructure, automated delivery, and managed database services on AWS.
+It connects three types of users:
 
-**The goal:** make emergency-resource information easier to discover, requests easier to manage, and the underlying application easier to deploy and maintain.
+- 🧑 **Citizens** — discover available resources and submit or track requests.
+- 🏥 **Resource Providers** — register their organizations, submit verification documents, and manage resources after administrator approval.
+- 🛡️ **Administrators** — review provider profiles, verify registration documents, and manage platform activity.
 
-## ✨ Key capabilities
+The project combines full-stack application development with containerization, AWS infrastructure, and cloud deployment practices.
+
+## 📚 Project Documentation
+
+Use these guides to understand, deploy, and explore Sahayak.
+
+| Documentation | What it covers |
+|---|---|
+| ☁️ [Complete AWS Deployment Guide](SAHAYAK_DEPLOYMENT_GUIDE.md) | Step-by-step deployment covering Terraform networking, PostgreSQL RDS setup, IAM roles, Elastic Beanstalk Cluster environments, security groups, Parameter Store, and GitHub Actions CI/CD. |
+| 🔄 [Website Flows and User Journeys](SAHAYAK_WEBSITE_FLOWS.md) | How citizens, providers, and administrators use the application, including registration, provider profile creation, document verification, resource management, emergency requests, and request status updates. |
+
+**Recommended reading order:** Start with the Website Flows guide to understand the application, then follow the Deployment Guide to deploy it on AWS.
+
+## 🏗️ System Architecture
+
+<p align="center">
+  <img src="docs/screenshots/Sahayak Emergency Resource Finder Architecture.png" alt="Sahayak system architecture showing users, frontend, backend, database, and deployment components" width="100%" />
+</p>
+
+<p align="center">
+  <i>High-level view of the application components and their interactions.</i>
+</p>
+
+### 🔄 How the Application Works
+
+```text
+                         👥 USERS
+                            |
+               +------------+------------+
+               |            |            |
+            Citizen      Provider      Admin
+               |            |            |
+               +------------+------------+
+                            |
+                     🌐 React Frontend
+                            |
+                     🔗 REST API Requests
+                            |
+                    ⚙️ Node.js + Express
+                            |
+               +------------+-------------+
+               |            |             |
+          Authentication  Role-Based   Provider
+                           Access      Verification
+               |            |             |
+               +------------+-------------+
+                            |
+                     🗄️ PostgreSQL
+                            |
+                  Users | Providers
+                  Resources | Requests
+                            |
+                     ☁️ AWS Deployment
+                 Elastic Beanstalk Cluster
+                      Amazon ECR
+                    GitHub Actions
+```
+
+**Core workflow:** Users interact with the frontend → the backend authenticates users and enforces authorization → application data is read from or written to PostgreSQL.
+
+## ✨ Key Features
+
+| Feature | Description |
+|---|---|
+| 🔐 Authentication | User registration, login, and role-based access |
+| 🧑 Citizen experience | Explore emergency resources and track submitted requests |
+| 🏥 Provider registration | Register an organization and submit verification documents |
+| ✅ Provider verification | Administrator review and approval or rejection of provider profiles |
+| 📦 Resource management | Create, update, delete, and manage emergency resource availability |
+| 🚨 Emergency requests | Submit requests for available resources and follow their status |
+| 🛡️ Admin dashboard | Review providers, inspect verification documents, and view emergency requests |
+| ☁️ AWS deployment | Cloud deployment using Elastic Beanstalk Cluster environments |
+| 🔄 CI/CD | GitHub Actions workflows for building, publishing, and deploying application images |
+
+### 🆘 Supported Resource Categories
+
+- 🩸 Blood
+- 🏥 Hospital beds
+- 💊 Medicines
+- 🚑 Ambulances
+- 🏠 Shelter
+- 🍱 Food
+- 💧 Water
+
+## 🔄 Website User Journeys
+
+Sahayak supports different workflows depending on the user's role.
+
+### 🧑 Citizen Flow
+
+1. Visit Sahayak and browse available emergency resources.
+2. Search by city or resource category.
+3. Open a resource to view its details and availability.
+4. Submit an emergency request either as a guest or as a signed-in citizen.
+5. Sign in to view requests associated with the citizen account under **My Requests**.
+
+### 🏥 Provider Flow
+
+1. Register a Sahayak account using the **Resource Provider** account type.
+2. Sign in and open the Provider Dashboard.
+3. Submit organization details and an authorization or registration document.
+4. Wait for administrator verification.
+5. If approved, create resources and manage their availability.
+6. Review incoming emergency requests and update their status.
+
+Providers must be approved before they can manage resources through the protected provider-resource API.
+
+### 🛡️ Administrator Flow
+
+1. Open the administrator login page.
+2. Sign in using an existing account with the `ADMIN` role.
+3. Review provider registrations and verification documents.
+4. Approve eligible provider profiles or reject them with a reason.
+5. Review providers, their resources, and emergency requests in the Admin Dashboard.
+
+For the full flow, including routes, role permissions, API endpoints, database relationships, and implementation notes, read **[SAHAYAK_WEBSITE_FLOWS.md](SAHAYAK_WEBSITE_FLOWS.md)**.
+
+## 🖥️ Application Preview
+
+### 🏠 Homepage
+
+<p align="center">
+  <img src="docs/screenshots/homepage.png" alt="Sahayak homepage" width="90%" />
+</p>
+
+### 📦 Available Resources
+
+<p align="center">
+  <img src="docs/screenshots/resources.png" alt="Sahayak resource listings" width="90%" />
+</p>
+
+### 📝 Resource Request Submission
+
+<p align="center">
+  <img src="docs/screenshots/resource-request-submission.png" alt="Sahayak resource request submission" width="90%" />
+</p>
+
+### 👤 User Requests
+
+<p align="center">
+  <img src="docs/screenshots/my-requests.png" alt="Sahayak user requests dashboard" width="90%" />
+</p>
+
+### 🏥 Provider Dashboard
+
+<p align="center">
+  <img src="docs/screenshots/provider-dashboard.png" alt="Sahayak provider dashboard" width="90%" />
+</p>
+
+### 🛡️ Admin Dashboard
+
+<p align="center">
+  <img src="docs/screenshots/admin-dashboard.png" alt="Sahayak admin dashboard" width="90%" />
+</p>
+
+### 📩 Incoming Requests
+
+<p align="center">
+  <img src="docs/screenshots/incoming-reuqest.png" alt="Sahayak incoming requests" width="90%" />
+</p>
+
+## 🧰 Technology Stack
 
 <table>
-<tr>
-<td width="33%" valign="top">
-
-### 🧑 Citizens
-
-- Browse available resources
-- Explore emergency-resource categories
-- Submit resource requests
-- Specify quantity and priority
-- Track request status
-
-</td>
-<td width="33%" valign="top">
-
-### 🏥 Resource providers
-
-- Register an organization
-- Submit provider information for verification
-- Create and manage resource listings
-- Maintain resource availability
-- Review incoming requests
-
-</td>
-<td width="33%" valign="top">
-
-### 🛡️ Administrators
-
-- Review provider verification requests
-- Approve or reject provider applications
-- Oversee platform activity
-- Manage access to administrative functionality
-
-</td>
-</tr>
+  <tr>
+    <td><b>🎨 Frontend</b></td>
+    <td>React, Vite</td>
+  </tr>
+  <tr>
+    <td><b>⚙️ Backend</b></td>
+    <td>Node.js, Express.js, REST APIs</td>
+  </tr>
+  <tr>
+    <td><b>🗄️ Database</b></td>
+    <td>PostgreSQL, Prisma ORM</td>
+  </tr>
+  <tr>
+    <td><b>🐳 Containers</b></td>
+    <td>Docker, Docker Compose</td>
+  </tr>
+  <tr>
+    <td><b>☁️ Cloud</b></td>
+    <td>Amazon Web Services (AWS)</td>
+  </tr>
+  <tr>
+    <td><b>🚀 Deployment</b></td>
+    <td>AWS Elastic Beanstalk Cluster, Amazon EKS, Amazon ECR</td>
+  </tr>
+  <tr>
+    <td><b>🔄 CI/CD</b></td>
+    <td>GitHub Actions, AWS IAM OIDC</td>
+  </tr>
+  <tr>
+    <td><b>🔐 Configuration</b></td>
+    <td>AWS Systems Manager Parameter Store</td>
+  </tr>
+  <tr>
+    <td><b>🏗️ Infrastructure</b></td>
+    <td>Terraform-managed AWS networking</td>
+  </tr>
+  <tr>
+    <td><b>🔧 Version Control</b></td>
+    <td>Git, GitHub</td>
+  </tr>
 </table>
 
-### 🚑 Emergency-resource categories
+## ☁️ DevOps & Cloud Focus
 
-| Category | Purpose |
-|---|---|
-| 🩸 Blood | Blood resource listings |
-| 🏥 Hospital beds | Hospital-bed availability |
-| 💊 Medicine | Essential medicines |
-| 🚑 Ambulance | Emergency transportation |
-| 🏠 Shelter | Temporary shelter |
-| 🍱 Food | Food assistance |
-| 💧 Water | Water assistance |
+This project provides practical experience with application deployment and cloud operations.
 
-## 🖼️ Application screenshots
+- 🐳 **Containerization:** Package application components using Docker.
+- 🔗 **Service orchestration:** Configure services with Docker Compose.
+- 🏗️ **Infrastructure as Code:** Create and manage AWS networking resources using Terraform.
+- ☁️ **Cloud deployment:** Deploy the application using Elastic Beanstalk Cluster environments.
+- 📦 **Image management:** Store and retrieve frontend and backend images using Amazon ECR.
+- 🔄 **CI/CD automation:** Build, publish, and deploy application images through GitHub Actions.
+- 🔐 **Secrets management:** Store production configuration in AWS Systems Manager Parameter Store.
+- 🗄️ **Database operations:** Connect to PostgreSQL and apply Prisma migrations.
+- 🧪 **Troubleshooting:** Investigate API errors, connectivity, container health, IAM permissions, and deployment failures.
+- 📚 **Documentation:** Maintain application workflow and infrastructure deployment guides alongside the source code.
 
-### 🏠 Application homepage
-
-<p align="center">
-  <img src="docs/screenshots/01-homepage.png" alt="Sahayak application homepage" width="95%"/>
-</p>
-
-### 🚑 Emergency-resource catalogue
-
-<p align="center">
-  <img src="docs/screenshots/02-resource-catalogue.png" alt="Sahayak emergency-resource catalogue" width="95%"/>
-</p>
-
-### 📝 Resource-request workflow
-
-<p align="center">
-  <img src="docs/screenshots/03-resource-request-form.png" alt="Sahayak resource-request form" width="95%"/>
-</p>
-
-### 📋 Citizen request tracking
-
-<p align="center">
-  <img src="docs/screenshots/04-my-requests.png" alt="Sahayak citizen request tracking" width="95%"/>
-</p>
-
-### 🏥 Provider dashboard
-
-<p align="center">
-  <img src="docs/screenshots/05-provider-dashboard.png" alt="Sahayak provider dashboard" width="95%"/>
-</p>
-
-### 🛡️ Administrator dashboard
-
-<p align="center">
-  <img src="docs/screenshots/06-admin-dashboard.png" alt="Sahayak provider verification interface" width="95%"/>
-</p>
-
-
-## 🏗️ System architecture
-
-```mermaid
-flowchart TB
-    CIT["🧑 Citizen"]
-    PRO["🏥 Resource Provider"]
-    ADM["🛡️ Administrator"]
-
-    subgraph APP["SAHAYAK APPLICATION"]
-        UI["React + Vite Frontend"]
-        NGINX["Nginx Web Server"]
-        API["Node.js + Express REST API"]
-        AUTH["JWT Authentication and Role-Based Access"]
-        ORM["Prisma ORM"]
-        DB[("PostgreSQL")]
-
-        UI --> NGINX
-        NGINX -->|" /api/ requests "| API
-        API --> AUTH
-        AUTH --> ORM
-        ORM --> DB
-    end
-
-    CIT --> UI
-    PRO --> UI
-    ADM --> UI
-
-    subgraph AWS["AWS CLOUD INFRASTRUCTURE"]
-        GH["GitHub Actions"]
-        ECR["Amazon ECR"]
-        EB["Elastic Beanstalk Cluster"]
-        EKS["Amazon EKS"]
-        RDS[("Amazon RDS for PostgreSQL")]
-        SSM["Systems Manager Parameter Store"]
-
-        GH --> ECR
-        ECR --> EB
-        EB --> EKS
-        EKS --> RDS
-        SSM -.->|"Configuration and secrets"| EB
-    end
-```
-
-### 🔄 How it works
-
-1. A user accesses Sahayak through the web interface.
-2. The frontend sends API requests through the Nginx `/api/` proxy.
-3. The Express backend processes requests and applies the relevant authentication and authorization rules.
-4. Prisma communicates with PostgreSQL to read or update application data.
-5. The frontend displays resource information and request status to the user.
-
-## 🧰 Technology stack
-
-| Layer | Technologies |
-|---|---|
-| Frontend | React, Vite, React Router |
-| Backend | Node.js, Express.js, REST API |
-| Authentication | JSON Web Tokens (JWT), role-based access |
-| ORM | Prisma |
-| Database | PostgreSQL, Amazon RDS |
-| Containerization | Docker, Docker Compose |
-| Image registry | Amazon Elastic Container Registry (ECR) |
-| Cloud deployment | AWS Elastic Beanstalk Cluster, Amazon EKS |
-| Configuration and secrets | AWS Systems Manager Parameter Store |
-| CI/CD | GitHub Actions |
-| AWS authentication | IAM roles and OpenID Connect (OIDC) |
-| Logging and metrics | Amazon CloudWatch |
-
-## ⚙️ DevOps and CI/CD pipeline
-
-Sahayak uses GitHub Actions to automate application validation, container-image publishing, and deployment to AWS.
-
-```mermaid
-flowchart TD
-    PUSH["Push code to GitHub"]
-    CI["GitHub Actions CI"]
-    FE["Frontend checks and production build"]
-    BE["Backend dependency and build checks"]
-    IMG["Build Docker images"]
-    ECR["Publish images to Amazon ECR"]
-    CD["GitHub Actions CD"]
-    BDEP["Deploy backend"]
-    FDEP["Deploy frontend"]
-    TEST["Verify environment health and application"]
-
-    PUSH --> CI
-    CI --> FE
-    CI --> BE
-    FE --> IMG
-    BE --> IMG
-    IMG --> ECR
-    ECR --> CD
-    CD --> BDEP
-    BDEP --> FDEP
-    FDEP --> TEST
-```
-
-### 🚀 Pipeline stages
-
-- **Continuous Integration:** validate the application, run configured frontend checks, and build application artifacts.
-- **Containerization:** build the frontend and backend Docker images.
-- **Image publishing:** publish versioned images to Amazon ECR.
-- **Continuous Deployment:** update the configured Elastic Beanstalk environments.
-- **Post-deployment verification:** check environment health, API responses, frontend loading, and application functionality.
-
-### 🔐 AWS authentication and configuration
-
-- GitHub Actions can authenticate to AWS through OIDC and an appropriately scoped IAM role.
-- Application configuration and sensitive values are managed through AWS Systems Manager Parameter Store.
-- Amazon ECR stores the container images used for deployment.
-- Amazon CloudWatch provides centralized logs and metrics.
-
-**Workflow files:** [CI](.github/workflows/ci.yaml) · [CD](.github/workflows/cd.yaml)
-
-> Deployment success should be confirmed using actual workflow results, environment health, and application tests. A successful image build alone does not guarantee a healthy deployment.
-
-## ☁️ AWS deployment status
-
-The backend has been deployed and its root endpoint is responding with the Sahayak API welcome message.
-
-| Component | Status |
-|---|---|
-| Backend API | ✅ Root endpoint responding |
-| Frontend environment | ⏳ Deployment and verification in progress |
-| Amazon ECR | Container-image registry configured |
-| PostgreSQL | Amazon RDS deployment |
-| CI/CD | GitHub Actions workflows configured |
-
-**Backend root response:**
-
-```json
-{
-  "success": true,
-  "message": "Welcome to Sahayak API",
-  "version": "1.0.0"
-}
-```
-
-This response confirms that the backend root endpoint responds. It does not independently verify database connectivity, authentication, or every API route.
-
-## 🚀 Run locally
+## 🚀 Run Locally
 
 ### Prerequisites
 
 - Git
-- Node.js and npm
 - Docker and Docker Compose
-- A reachable PostgreSQL database and valid environment configuration
+- Environment configuration required by the application
 
 ### 1. Clone the repository
 
@@ -280,146 +269,92 @@ cd sahayak
 
 ### 2. Configure environment variables
 
-Review the backend configuration and root `docker-compose.yml` before starting the services.
+Review the backend, frontend, and root `docker-compose.yml` files to identify the environment variables required for your local setup.
 
-| Variable | Purpose |
-|---|---|
-| `DATABASE_URL` | PostgreSQL connection string |
-| `JWT_SECRET` | JWT signing secret |
-| `JWT_EXPIRES_IN` | Token lifetime, such as `7d` |
-| `FRONTEND_URL` | Frontend origin |
-| `PORT` | Backend port, configured as `5000` |
+Configure your local database URL, authentication secret, and frontend API URL as applicable.
 
-Use local development values. Never commit production credentials, secret values, AWS access keys, or populated `.env` files.
+**Do not commit real passwords, tokens, production database URLs, or other secrets.**
 
-### 3. Start the configured services
+### 3. Start the application
 
-After confirming the Compose configuration and environment values:
+From the repository root, review the Compose configuration and run:
 
 ```bash
-docker compose pull
-docker compose up -d
-docker compose ps
+docker compose up --build -d
 ```
 
-Inspect service logs:
+Check service status and logs:
 
 ```bash
+docker compose ps
 docker compose logs --tail=100
 ```
 
-**Note:** If the Compose file references private Amazon ECR images, authenticate to ECR before pulling them. Local execution also requires the correct database connection and application environment variables.
+Use the frontend and backend addresses configured in your environment and Compose files.
 
-### 4. Test the API
+For AWS deployment, follow the **[Complete AWS Deployment Guide](SAHAYAK_DEPLOYMENT_GUIDE.md)**.
 
-If the backend is running locally:
-
-```bash
-curl -i http://localhost:5000/
-```
-
-The root endpoint should return the Sahayak API welcome response. Use the application's actual health endpoint separately to test service health.
-
-For AWS deployment and troubleshooting, see the [Sahayak Deployment Guide](SAHAYAK_DEPLOYMENT_GUIDE.md).
-
-## 📁 Repository structure
+## 📁 Repository Structure
 
 ```text
 sahayak/
 ├── .github/
-│   └── workflows/
-│       ├── ci.yaml
-│       └── cd.yaml
-├── backend/
-│   ├── prisma/
-│   │   └── migrations/
-│   ├── src/
-│   └── Dockerfile
-├── frontend/
-│   ├── src/
-│   ├── nginx.conf
-│   └── Dockerfile
-├── deployment/
-│   └── elastic-beanstalk/
+│   └── workflows/                 # CI and CD workflows
+├── backend/                       # Express API and application logic
+├── frontend/                      # React + Vite frontend
 ├── docs/
-│   └── screenshots/
-├── docker-compose.yml
-├── SAHAYAK_DEPLOYMENT_GUIDE.md
-└── README.md
+│   └── screenshots/               # Application screenshots and diagrams
+├── deployment/
+│   └── elastic-beanstalk/         # Elastic Beanstalk deployment files
+├── terraform/
+│   └── networking/                # Terraform-managed VPC and networking
+├── docker-compose.yml             # Local service configuration
+├── SAHAYAK_DEPLOYMENT_GUIDE.md    # AWS deployment instructions
+├── SAHAYAK_WEBSITE_FLOWS.md       # Website workflows and user journeys
+└── README.md                      # Project overview
 ```
 
-## 🔒 Security and operational practices
+*The tree highlights the main project areas; consult the repository for the complete file structure.*
 
-- Keep the production RDS database private.
-- Restrict PostgreSQL ingress to the intended application security group.
-- Store production secrets securely and grant workloads only the required permissions.
-- Avoid committing secrets or printing them in workflow logs.
-- Validate the Nginx API proxy and CORS configuration where applicable.
-- Check environment health after every deployment.
-- Monitor CloudWatch logs and metrics for application failures.
-- Review AWS costs for RDS, load balancers, NAT gateways, EKS/Elastic Beanstalk resources, and networking.
+## 🎯 What This Project Demonstrates
 
-## 🛣️ Future roadmap
+- Full-stack application architecture
+- REST API development and integration
+- User authentication and role-based authorization
+- Provider registration and verification workflows
+- Emergency resource and request management
+- Relational database integration
+- Docker-based development and deployment
+- Terraform-managed AWS networking
+- AWS Elastic Beanstalk Cluster deployment
+- GitHub Actions CI/CD automation
+- Application troubleshooting and technical documentation
 
-The next improvements focus on **reliability, security, observability, and emergency-resource usability**.
+## 🔮 Future Improvements
 
-### 🧪 Application quality
+- 📍 Location-based resource discovery
+- 🔔 Real-time request status notifications
+- 📊 Resource availability analytics
+- 🧪 Expanded automated application testing
+- 📈 Centralized monitoring and operational dashboards
+- 📱 Improved mobile accessibility
 
-- [ ] Add automated backend unit and integration tests.
-- [ ] Add API tests for authentication, authorization, and resource-request workflows.
-- [ ] Validate request payloads and standardize API error responses.
-- [ ] Add database indexes and review query performance as data grows.
-- [ ] Add pagination, filtering, and sorting for larger resource catalogues.
-
-### 🚨 Emergency-resource experience
-
-- [ ] Add location-based resource discovery with distance-aware filtering.
-- [ ] Add resource availability timestamps and stale-listing indicators.
-- [ ] Implement request notifications and status updates.
-- [ ] Add duplicate-request prevention and clear request lifecycle states.
-- [ ] Improve accessibility, mobile responsiveness, and low-bandwidth usability.
-
-### 🔐 Security and resilience
-
-- [ ] Add rate limiting and stronger validation for sensitive endpoints.
-- [ ] Review authorization rules to prevent users from accessing other users' requests.
-- [ ] Configure database backup retention and test restoration procedures.
-- [ ] Add dependency and container-image vulnerability scanning.
-- [ ] Document recovery procedures for failed deployments and database incidents.
-
-### ☁️ DevOps and observability
-
-- [ ] Add automated post-deployment smoke tests to GitHub Actions.
-- [ ] Fail deployments when critical health checks do not pass.
-- [ ] Add CloudWatch dashboards, alarms, and actionable notifications.
-- [ ] Add infrastructure validation and drift detection for Terraform-managed resources.
-- [ ] Use immutable image tags and retain a documented rollback procedure.
-- [ ] Track deployment outcomes and improve release reliability.
-
-## 👩‍💻 About the developer
+## 👩‍💻 Author
 
 **Snehal Pawar**  
-Aspiring DevOps & Cloud Engineer | AWS | Linux | Docker | Kubernetes | CI/CD
+Aspiring DevOps & Cloud Engineer | AWS | Linux | Docker | Kubernetes
 
-Building practical experience in cloud infrastructure, containerization, automated deployment, and reliable application delivery through hands-on projects.
-
-<p>
+<p align="left">
   <a href="https://github.com/snehalpawar29">
-    <img src="https://img.shields.io/badge/GitHub-snehalpawar29-181717?style=for-the-badge&logo=github" alt="GitHub profile"/>
+    <img src="https://img.shields.io/badge/GitHub-snehalpawar29-181717?style=for-the-badge&logo=github" alt="GitHub profile" />
   </a>
   <a href="https://linkedin.com/in/snehalpawar29">
-    <img src="https://img.shields.io/badge/LinkedIn-Connect-0A66C2?style=for-the-badge&logo=linkedin" alt="LinkedIn profile"/>
+    <img src="https://img.shields.io/badge/LinkedIn-Connect-0A66C2?style=for-the-badge&logo=linkedin" alt="LinkedIn profile" />
   </a>
 </p>
 
 ---
 
-<div align="center">
-
-### 🌍 Built with purpose. Automated with DevOps.
-
-**Sahayak — helping people find essential resources when they need them most.** ❤️
-
-⭐ If you find this project useful, consider starring the repository.
-
-</div>
+<p align="center">
+  <b>Built with purpose. Designed to connect people with essential resources. ❤️</b>
+</p>
