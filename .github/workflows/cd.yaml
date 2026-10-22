@@ -30,7 +30,7 @@ jobs:
       AWS_ACCOUNT_ID: "033161567802"
       EB_APPLICATION: Sahayak
       BACKEND_ENVIRONMENT: Sahayak-env
-      FRONTEND_ENVIRONMENT: sahayak-frontend-env
+      FRONTEND_ENVIRONMENT: Sahayak-frontend-env
       IMAGE_TAG: ${{ github.event.workflow_run.head_sha }}
 
     steps:
