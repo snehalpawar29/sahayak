@@ -17,10 +17,9 @@ coverage/
 
 postgres_data/
 
-sahayak-pre-rds.dump
 
-.terraform/
-*.tfstate
-*.tfstate.*
-.terraform.lock.hcl
-tfplan
+**/tfplan
+**/tfplan.*
+**/*.tfstate
+**/*.tfstate.*
+**/.terraform/
